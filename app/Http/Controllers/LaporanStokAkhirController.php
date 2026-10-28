@@ -51,6 +51,12 @@ class LaporanStokAkhirController extends Controller
                     $namaBarang = $nama;
                 }
 
+                // Kalau ukuran tidak ditulis di nama barang, pakai satuan yang mengandung
+                // ukuran (mis. "200 ml") supaya kolom Berat Bersih tidak kosong.
+                if ($beratBersih === '') {
+                    $beratBersih = self::beratBersihDariSatuan((string) $produk->satuan);
+                }
+
                 return (object) [
                     'produk' => $produk,
                     'nama_barang' => $namaBarang,
@@ -65,11 +71,29 @@ class LaporanStokAkhirController extends Controller
             ->filter(fn ($laporan) => $laporan->stok_awal > 0 || $laporan->penjualan > 0)
             ->values();
 
+        // "Semua nama": barang yang sama (nama + berat bersih) dari pemilik berbeda
+        // digabung jadi satu baris (stok & penjualan dijumlah) biar tabel tidak boros.
+        if (empty($filters['pemilik'])) {
+            $laporans = $laporans
+                ->groupBy(fn ($laporan) => mb_strtolower(trim($laporan->nama_barang)).'|'.mb_strtolower(trim($laporan->berat_bersih)))
+                ->map(fn ($group) => (object) [
+                    'nama_barang' => $group->first()->nama_barang,
+                    'berat_bersih' => $group->first()->berat_bersih,
+                    'stok_awal' => $group->sum('stok_awal'),
+                    'penjualan' => $group->sum('penjualan'),
+                    'stok_akhir' => $group->sum('stok_akhir'),
+                ])
+                ->values();
+        }
+
         $pemilikTerpilihObj = ! empty($filters['pemilik'])
             ? Pemilik::query()->where('kode', $filters['pemilik'])->first()
             : null;
 
-        $alamat = $filters['alamat'] ?? ($pemilikTerpilihObj?->alamat ?: 'Dsn. Dawung Kec. Grabagan Kab. Tuban');
+        $alamat = trim((string) ($filters['alamat'] ?? ''));
+        if ($alamat === '') {
+            $alamat = trim((string) ($pemilikTerpilihObj?->alamat ?? ''));
+        }
 
         $tanggalFormatted = Carbon::parse($tanggalSelesai)->locale('id')->translatedFormat('l, d F Y');
 
@@ -87,6 +111,21 @@ class LaporanStokAkhirController extends Controller
             'pemilikTerpilihObj' => $pemilikTerpilihObj,
             'alamat' => $alamat,
         ]);
+    }
+
+    /**
+     * Ambil ukuran dari satuan bila satuannya berupa ukuran kemasan (mis. "200 ml", "1 kg").
+     * Satuan hitung biasa seperti "pcs" atau "botol" tidak dipakai sebagai berat bersih.
+     */
+    private static function beratBersihDariSatuan(string $satuan): string
+    {
+        $satuan = trim($satuan);
+
+        if ($satuan !== '' && preg_match('/\d+(?:[.,]\d+)?\s*(?:ml|liter|lt|ltr|kg|gram|gr|ons|dus|zak|pack|btl|botol|sachet|sak|can|galon)\b/i', $satuan)) {
+            return $satuan;
+        }
+
+        return '';
     }
 
     /**

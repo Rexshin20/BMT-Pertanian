@@ -6,7 +6,7 @@
   <title>Login - Koperasi Konsumen Cinde Barokah Sejahtera</title>
   <link rel="shortcut icon" type="image/png" href="{{ asset('assets/images/logos/bmt-cinde-barokah.png') }}">
   <link rel="stylesheet" href="{{ asset('assets/css/styles.min.css') }}">
-  <link rel="stylesheet" href="{{ asset('assets/css/bmt-theme.css') }}">
+  <link rel="stylesheet" href="{{ asset('assets/css/bmt-theme.css') }}?v={{ filemtime(public_path('assets/css/bmt-theme.css')) }}">
 </head>
 <body>
   <div class="page-wrapper bmt-login-page min-vh-100 d-flex align-items-center justify-content-center" id="main-wrapper">

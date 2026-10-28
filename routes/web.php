@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ImporController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LaporanLabaRugiController;
@@ -32,10 +33,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/pemilik/{pemilik}/edit', [PemilikController::class, 'edit'])->name('pemilik.edit');
     Route::put('/pemilik/{pemilik}', [PemilikController::class, 'update'])->name('pemilik.update');
     Route::delete('/pemilik/{pemilik}', [PemilikController::class, 'destroy'])->name('pemilik.destroy');
+    Route::get('/impor', [ImporController::class, 'index'])->name('impor.index');
+    Route::post('/impor/preview', [ImporController::class, 'preview'])->name('impor.preview');
+    Route::post('/impor/simpan', [ImporController::class, 'simpan'])->name('impor.simpan');
     Route::get('/pembelian', [PembelianController::class, 'index'])->name('pembelian.index');
     Route::get('/pembelian/create', [PembelianController::class, 'create'])->name('pembelian.create');
     Route::get('/pembelian/master-data', [PembelianController::class, 'index'])->name('pembelian.master-data');
     Route::post('/pembelian', [PembelianController::class, 'store'])->name('pembelian.store');
+    Route::get('/pembelian/template', [PembelianController::class, 'template'])->name('pembelian.template');
+    Route::post('/pembelian/import/preview', [PembelianController::class, 'importPreview'])->middleware('throttle:20,1')->name('pembelian.import.preview');
+    Route::post('/pembelian/import', [PembelianController::class, 'importStore'])->name('pembelian.import.store');
     Route::get('/penjualan', [PenjualanController::class, 'index'])->name('penjualan.index');
     Route::get('/penjualan/create', [PenjualanController::class, 'create'])->name('penjualan.create');
     Route::get('/penjualan/master-data', [PenjualanController::class, 'index'])->name('penjualan.master-data');

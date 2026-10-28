@@ -27,17 +27,51 @@ class PenjualanController extends Controller
             $query->whereHas('produk.pemilik', fn ($ownerQuery) => $ownerQuery->where('kode', $filters['pemilik']));
         }
 
+        $penjualans = $query
+            ->latest('tanggal')
+            ->latest('id')
+            ->get()
+            ->map(fn (Penjualan $p) => (object) [
+                'tanggal' => $p->tanggal,
+                'nama_barang' => trim($p->produk->nama),
+                'satuan' => trim($p->satuan ?: $p->produk->satuan),
+                'harga' => $p->harga_jual,
+                'jumlah' => $p->jumlah,
+                'ownerKode' => $p->produk->pemilik->kode ?? '',
+            ]);
+
+        // "Semua nama": transaksi yang tanggal, barang, satuan, dan harganya sama
+        // digabung jadi satu baris (jumlah dijumlah) biar tabel tidak boros.
+        if (empty($filters['pemilik'])) {
+            $penjualans = $penjualans
+                ->groupBy(fn ($p) => $p->tanggal->format('Y-m-d')
+                    .'|'.mb_strtolower($p->nama_barang)
+                    .'|'.mb_strtolower($p->satuan)
+                    .'|'.sprintf('%.4f', (float) $p->harga))
+                ->map(fn ($group) => $group->count() === 1
+                    ? $group->first()
+                    : (object) [
+                        'tanggal' => $group->first()->tanggal,
+                        'nama_barang' => $group->first()->nama_barang,
+                        'satuan' => $group->first()->satuan,
+                        'harga' => $group->first()->harga,
+                        'jumlah' => (string) $group->sum('jumlah'),
+                        'ownerKode' => '',
+                    ])
+                ->values();
+        }
+
         return view('keuangan.penjualan.master-data', [
-            'penjualans' => $query
-                ->latest('tanggal')
-                ->latest('id')
-                ->get(),
+            'penjualans' => $penjualans,
             'pemiliks' => Pemilik::query()->orderByRaw('CAST(kode AS DECIMAL(20, 0))')->get(),
             'pemilikTerpilih' => $filters['pemilik'] ?? '',
             'tanggalMulai' => $filters['tanggal_mulai'] ?? '',
             'tanggalSelesai' => $filters['tanggal_selesai'] ?? '',
             'pemilikTerpilihNama' => ! empty($filters['pemilik'])
                 ? Pemilik::query()->where('kode', $filters['pemilik'])->value('nama')
+                : null,
+            'pemilikTerpilihObj' => ! empty($filters['pemilik'])
+                ? Pemilik::query()->where('kode', $filters['pemilik'])->first()
                 : null,
         ]);
     }

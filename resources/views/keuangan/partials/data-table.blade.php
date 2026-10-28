@@ -125,30 +125,23 @@
       @endif
     });
 
-    const resetDateFilter = document.querySelector('[data-date-filter-reset="{{ $tableId }}"]');
     if (dateFrom && dateTo) {
-      dateFrom.addEventListener('change', () => table.draw());
-      dateTo.addEventListener('change', () => table.draw());
-    }
-
-    if (resetDateFilter && dateFrom && dateTo) {
-      resetDateFilter.addEventListener('click', () => {
-        dateFrom.value = '';
-        dateTo.value = '';
-
+      const syncDateQuery = () => {
         const dateFromQuery = document.getElementById('{{ $tableId }}-date-from-query');
         const dateToQuery = document.getElementById('{{ $tableId }}-date-to-query');
         if (dateFromQuery && dateToQuery) {
-          dateFromQuery.value = '';
-          dateToQuery.value = '';
+          dateFromQuery.value = dateFrom.value;
+          dateToQuery.value = dateTo.value;
         }
+      };
 
-        const filterForm = resetDateFilter.form || ownerFilterForm;
-        if (((dateFrom.name && dateTo.name) || (dateFromQuery && dateToQuery)) && filterForm) {
-          filterForm.requestSubmit();
-        } else {
-          table.draw();
-        }
+      dateFrom.addEventListener('change', () => {
+        syncDateQuery();
+        table.draw();
+      });
+      dateTo.addEventListener('change', () => {
+        syncDateQuery();
+        table.draw();
       });
     }
   </script>

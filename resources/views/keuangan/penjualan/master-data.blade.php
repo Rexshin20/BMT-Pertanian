@@ -1,7 +1,7 @@
 @extends('layouts.modernize')
 
 @section('title', 'View Penjualan')
-@section('page-title', 'View Penjualan (HJ)')
+@section('page-title', 'View Penjualan')
 
 @section('content')
 <div class="card">
@@ -19,19 +19,24 @@
     <div class="table-responsive">
       <table id="penjualan-table" class="table table-hover align-middle text-nowrap mb-0">
         <thead>
-          <tr><th>No.</th><th>Tgl</th><th>ID</th><th>Nama Pemilik</th><th>Nama Barang</th><th>Unit</th><th class="text-end">Harga HJ / Unit</th><th class="text-end">Jumlah</th></tr>
+          <tr>
+            <th class="text-center" style="width: 56px;">No.</th>
+            <th class="text-center" style="width: 96px;">Tgl</th>
+            <th style="min-width: 240px;">Nama Barang</th>
+            <th class="text-center" style="width: 80px;">Unit</th>
+            <th class="text-center" style="width: 130px;">Harga</th>
+            <th class="text-center" style="width: 110px;">Jumlah</th>
+          </tr>
         </thead>
         <tbody>
           @foreach ($penjualans as $penjualan)
-            <tr data-date="{{ $penjualan->tanggal->format('Y-m-d') }}" data-owner-code="{{ $penjualan->produk->pemilik->kode ?? '' }}">
-              <td>{{ $loop->iteration }}</td>
-              <td data-order="{{ $penjualan->tanggal->format('Y-m-d') }}">{{ $penjualan->tanggal->format('d/m/Y') }}</td>
-              <td>{{ $penjualan->produk->pemilik?->id_tampilan ?? '-' }}</td>
-              <td>{{ $penjualan->produk->pemilik?->nama ?? 'Belum ditentukan' }}</td>
-              <td class="fw-semibold">{{ $penjualan->produk->nama }}</td>
-              <td>{{ $penjualan->satuan ?: $penjualan->produk->satuan }}</td>
-              <td class="text-end" data-order="{{ $penjualan->harga_jual }}">Rp {{ number_format((float) $penjualan->harga_jual, 2, ',', '.') }}</td>
-              <td class="text-end fw-semibold" data-order="{{ $penjualan->jumlah }}">{{ rtrim(rtrim(number_format((float) $penjualan->jumlah, 3, ',', '.'), '0'), ',') }}</td>
+            <tr data-date="{{ $penjualan->tanggal->format('Y-m-d') }}" data-owner-code="{{ $penjualan->ownerKode ?? '' }}">
+              <td class="text-center">{{ $loop->iteration }}</td>
+              <td class="text-center" data-order="{{ $penjualan->tanggal->format('Y-m-d') }}">{{ $penjualan->tanggal->format('d/m/Y') }}</td>
+              <td class="fw-semibold">{{ $penjualan->nama_barang }}</td>
+              <td class="text-center">{{ $penjualan->satuan }}</td>
+              <td class="text-center" data-order="{{ $penjualan->harga }}">Rp {{ number_format((float) $penjualan->harga, 2, ',', '.') }}</td>
+              <td class="text-center fw-semibold" data-order="{{ $penjualan->jumlah }}">{{ rtrim(rtrim(number_format((float) $penjualan->jumlah, 3, ',', '.'), '0'), ',') }}</td>
             </tr>
           @endforeach
         </tbody>
@@ -40,6 +45,17 @@
   </div>
 </div>
 @endsection
+
+@include('keuangan.partials.export-buttons', [
+    'tableId' => 'penjualan-table',
+    'judulExport' => 'PENJUALAN',
+    'prefixFile' => 'Penjualan',
+    'kolomHuruf' => ['A', 'B', 'C', 'D', 'E', 'F'],
+    'tipeKolom' => ['A' => 'num', 'B' => 'text', 'C' => 'text', 'D' => 'text', 'E' => 'num', 'F' => 'num'],
+    'lebarExcel' => [6, 12, 34, 10, 18, 12],
+    'lebarPdf' => ['6%', '12%', '40%', '10%', '20%', '12%'],
+    'rataKiri' => [2],
+])
 
 @include('keuangan.partials.data-table', [
     'tableId' => 'penjualan-table',

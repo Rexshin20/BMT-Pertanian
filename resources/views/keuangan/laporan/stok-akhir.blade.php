@@ -49,41 +49,40 @@
       </div>
       <div class="col-sm-6 col-md-3">
         <label class="form-label" for="stok-akhir-alamat">Alamat / Desa</label>
-        <input class="form-control" type="text" id="stok-akhir-alamat" name="alamat"
-          value="{{ $alamat }}" placeholder="Dsn. Dawung Kec. Grabagan Kab. Tuban">
+        <input class="form-control bg-light" type="text" id="stok-akhir-alamat" name="alamat"
+          value="{{ $alamat }}" placeholder="Alamat pemilik" readonly tabindex="-1"
+          title="Alamat diambil dari Master ID Nama">
       </div>
-      <div class="col-sm-6 col-md-2">
+      <div class="col-sm-6 col-md-3">
         <label class="form-label" for="stok-akhir-date-from">Tanggal dari</label>
-        <input class="form-control" type="date" id="stok-akhir-date-from" name="tanggal_mulai" value="{{ $tanggalMulai }}">
+        <input class="form-control" type="date" id="stok-akhir-date-from" name="tanggal_mulai"
+          value="{{ $tanggalMulai }}" onchange="this.form.requestSubmit()">
       </div>
-      <div class="col-sm-6 col-md-2">
+      <div class="col-sm-6 col-md-3">
         <label class="form-label" for="stok-akhir-date-to">Tanggal sampai</label>
-        <input class="form-control" type="date" id="stok-akhir-date-to" name="tanggal_selesai" value="{{ $tanggalSelesai }}">
-      </div>
-      <div class="col-sm-6 col-md-2 d-flex gap-2">
-        <button class="btn btn-primary w-100" type="submit">Filter</button>
-        <button class="btn btn-outline-secondary" type="button" title="Reset tanggal" onclick="document.getElementById('stok-akhir-date-from').value = ''; document.getElementById('stok-akhir-date-to').value = ''; this.form.requestSubmit();">Reset</button>
+        <input class="form-control" type="date" id="stok-akhir-date-to" name="tanggal_selesai"
+          value="{{ $tanggalSelesai }}" onchange="this.form.requestSubmit()">
       </div>
     </form>
     <div class="table-responsive">
       <table id="stok-akhir-table" class="table table-hover align-middle text-nowrap mb-0">
         <thead>
           <tr>
-            <th>NO</th>
-            <th>NAMA BARANG</th>
-            <th>BERAT BERSIH</th>
-            <th class="text-end">STOK BARANG</th>
-            <th class="text-end">BARANG TERJUAL</th>
-            <th class="text-end">STOK AKHIR</th>
-            <th>KETERANGAN</th>
+            <th class="text-center" style="width: 56px;">No.</th>
+            <th style="min-width: 240px;">Nama Barang</th>
+            <th class="text-center" style="width: 110px;">Berat Bersih</th>
+            <th class="text-end" style="width: 130px;">Stok Barang</th>
+            <th class="text-end" style="width: 130px;">Barang Terjual</th>
+            <th class="text-end" style="width: 130px;">Stok Akhir</th>
+            <th style="min-width: 140px;">Keterangan</th>
           </tr>
         </thead>
         <tbody>
           @foreach ($laporans as $laporan)
             <tr>
-              <td>{{ $loop->iteration }}</td>
+              <td class="text-center">{{ $loop->iteration }}</td>
               <td class="fw-semibold">{{ $laporan->nama_barang }}</td>
-              <td>{{ $laporan->berat_bersih }}</td>
+              <td class="text-center">{{ $laporan->berat_bersih }}</td>
               <td class="text-end" data-order="{{ $laporan->stok_awal }}">{{ rtrim(rtrim(number_format((float) $laporan->stok_awal, 3, ',', '.'), '0'), ',') }}</td>
               <td class="text-end" data-order="{{ $laporan->penjualan }}">{{ rtrim(rtrim(number_format((float) $laporan->penjualan, 3, ',', '.'), '0'), ',') }}</td>
               <td class="text-end fw-semibold {{ (float) $laporan->stok_akhir < 0 ? 'text-danger' : '' }}" data-order="{{ $laporan->stok_akhir }}">{{ rtrim(rtrim(number_format((float) $laporan->stok_akhir, 3, ',', '.'), '0'), ',') }}</td>
@@ -105,15 +104,14 @@
   $logoKopBase64 = file_exists($logoKopFile)
     ? base64_encode(file_get_contents($logoKopFile))
     : '';
+  $alamatTampil = trim((string) ($alamat ?? '')) !== '' ? $alamat : '-';
 @endphp
 <script>
   // Auto-fill alamat saat pemilik berubah
   function stokAkhirOnPemilikChange(sel) {
     const alamatInput = document.getElementById('stok-akhir-alamat');
     const alamat = sel.options[sel.selectedIndex].dataset.alamat || '';
-    if (alamat) {
-      alamatInput.value = alamat;
-    }
+    alamatInput.value = alamat;
     sel.form.requestSubmit();
   }
   window['customButtons_stok-akhir-table'] = [
@@ -135,9 +133,9 @@
           'Ds. Plumpung RT.05 RW.04 DS. Sumurcinde Kec. Soko Kab. Tuban',
           '--------------------------------------------------------------------------------',
           'STOK AKHIR',
-          'NAMA           : {{ $pemilikTerpilihNama ?? "Semua Pemilik" }}',
-          'ALAMAT         : {{ $alamat }}',
-          'HARI, TANGGAL  : {{ $tanggalFormatted }}',
+          'Nama           : {{ $pemilikTerpilihNama ?? "Semua Pemilik" }}',
+          'Alamat         : {{ $alamatTampil }}',
+          'Hari, Tanggal  : {{ $tanggalFormatted }}',
           ''
         ].join('\r\n');
 
@@ -292,9 +290,9 @@
         merges.push('A7:G7');
         sheetData.insertBefore(mkRow(sheet, 7, [inlineCell(sheet, 'A7', 'STOK AKHIR', S.boldCen)], '18'), anchor);
         // info parameter
-        sheetData.insertBefore(mkRow(sheet, 8, [inlineCell(sheet, 'B8', 'NAMA           : {{ $pemilikTerpilihNama ?? "Semua Pemilik" }}')]), anchor);
-        sheetData.insertBefore(mkRow(sheet, 9, [inlineCell(sheet, 'B9', 'ALAMAT         : {{ $alamat }}')]), anchor);
-        sheetData.insertBefore(mkRow(sheet, 10, [inlineCell(sheet, 'B10', 'HARI, TANGGAL  : {{ $tanggalFormatted }}')]), anchor);
+        sheetData.insertBefore(mkRow(sheet, 8, [inlineCell(sheet, 'B8', 'Nama           : {{ $pemilikTerpilihNama ?? "Semua Pemilik" }}')]), anchor);
+        sheetData.insertBefore(mkRow(sheet, 9, [inlineCell(sheet, 'B9', 'Alamat         : {{ $alamatTampil }}')]), anchor);
+        sheetData.insertBefore(mkRow(sheet, 10, [inlineCell(sheet, 'B10', 'Hari, Tanggal  : {{ $tanggalFormatted }}')]), anchor);
 
         // --- 4. Tanda tangan: Mengetahui/Ketua Pengurus/SUDIONO di bawah garis titik-titik (seperti PDF) ---
         const sigStart = numRows + 13;
@@ -500,21 +498,21 @@
                   stack: [
                     {
                       columns: [
-                        { text: 'NAMA', width: 90, fontSize: 8.5, bold: true },
+                        { text: 'Nama', width: 90, fontSize: 8.5, bold: true },
                         { text: ': {{ $pemilikTerpilihNama ?? "Semua Pemilik" }}', width: '*', fontSize: 8.5 }
                       ],
                       margin: [0, 0, 0, 2]
                     },
                     {
                       columns: [
-                        { text: 'ALAMAT', width: 90, fontSize: 8.5, bold: true },
-                        { text: ': {{ $alamat }}', width: '*', fontSize: 8.5 }
+                        { text: 'Alamat', width: 90, fontSize: 8.5, bold: true },
+                        { text: ': {{ $alamatTampil }}', width: '*', fontSize: 8.5 }
                       ],
                       margin: [0, 0, 0, 2]
                     },
                     {
                       columns: [
-                        { text: 'HARI, TANGGAL', width: 90, fontSize: 8.5, bold: true },
+                        { text: 'Hari, Tanggal', width: 90, fontSize: 8.5, bold: true },
                         { text: ': {{ $tanggalFormatted }}', width: '*', fontSize: 8.5 }
                       ]
                     }
@@ -576,8 +574,9 @@
             {
               width: '34%',
               stack: [
-                // Diturunkan sampai di bawah garis titik-titik Pengirim & Penerima
-                { text: '', margin: [0, 64, 0, 0] },
+                // Spacer berupa baris nyata (bukan margin) supaya blok tengah tetap
+                // turun walau tanda tangan dimulai di halaman baru.
+                { text: '\u00A0\n\u00A0\n\u00A0\n\u00A0\n\u00A0\n\u00A0\n\u00A0', fontSize: 8 },
                 { text: 'Mengetahui', bold: true, alignment: 'center' },
                 { text: 'Ketua Pengurus', bold: true, alignment: 'center', margin: [0, 0, 0, 0] },
                 { text: '', margin: [0, 44, 0, 0] },

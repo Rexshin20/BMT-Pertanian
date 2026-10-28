@@ -49,19 +49,19 @@
             <li class="sidebar-item">
               <a class="sidebar-link" href="{{ route('penjualan.index') }}">
                 <span><i class="ti ti-shopping-cart"></i></span>
-                <span class="hide-menu">Penjualan (HJ)</span>
+                <span class="hide-menu">Penjualan</span>
               </a>
             </li>
             <li class="sidebar-item">
               <a class="sidebar-link" href="{{ route('pembelian.index') }}">
                 <span><i class="ti ti-basket"></i></span>
-                <span class="hide-menu">Pembelian (HB)</span>
+                <span class="hide-menu">Pembelian</span>
               </a>
             </li>
             <li class="sidebar-item">
               <a class="sidebar-link" href="{{ route('laporan.laba-rugi') }}">
                 <span><i class="ti ti-report-money"></i></span>
-                <span class="hide-menu">Laba Rugi (HB & HJ)</span>
+                <span class="hide-menu">Laba Rugi</span>
               </a>
             </li>
             <li class="sidebar-item">
@@ -90,6 +90,12 @@
               <a class="sidebar-link" href="{{ route('pembelian.create') }}">
                 <span><i class="ti ti-receipt"></i></span>
                 <span class="hide-menu">Create Pembelian</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="{{ route('impor.index') }}">
+                <span><i class="ti ti-file-import"></i></span>
+                <span class="hide-menu">Impor</span>
               </a>
             </li>
             <li class="nav-small-cap">
@@ -134,12 +140,6 @@
             <li class="nav-item">
               <span class="nav-link">Koperasi Konsumen Cinde Barokah Sejahtera</span>
             </li>
-            <li class="nav-item">
-              <a class="nav-link nav-icon-hover" href="javascript:void(0)">
-                <i class="ti ti-bell-ringing"></i>
-                <div class="notification bg-primary rounded-circle"></div>
-              </a>
-            </li>
           </ul>
           <div class="navbar-collapse justify-content-end px-0" id="navbarNav">
             <ul class="navbar-nav flex-row ms-auto align-items-center justify-content-end">
@@ -150,17 +150,9 @@
                 </a>
                 <div class="dropdown-menu dropdown-menu-end dropdown-menu-animate-up" aria-labelledby="drop2">
                   <div class="message-body">
-                    <a href="javascript:void(0)" class="d-flex align-items-center gap-2 dropdown-item">
+                    <a href="{{ route('account.edit') }}" class="d-flex align-items-center gap-2 dropdown-item">
                       <i class="ti ti-user fs-6"></i>
                       <p class="mb-0 fs-3">My Profile</p>
-                    </a>
-                    <a href="javascript:void(0)" class="d-flex align-items-center gap-2 dropdown-item">
-                      <i class="ti ti-mail fs-6"></i>
-                      <p class="mb-0 fs-3">My Account</p>
-                    </a>
-                    <a href="javascript:void(0)" class="d-flex align-items-center gap-2 dropdown-item">
-                      <i class="ti ti-list-check fs-6"></i>
-                      <p class="mb-0 fs-3">My Task</p>
                     </a>
                     <form method="POST" action="{{ route('logout') }}">
                       @csrf
@@ -177,7 +169,7 @@
       <div class="container-fluid app-content-with-footer">
         <!--  Row 1 -->
         <div class="row">
-          <div class="col-lg-8 d-flex align-items-strech">
+          <div class="col-lg-8 d-flex align-items-stretch">
             <div class="card w-100">
               <div class="card-body">
                 <div class="d-sm-flex d-block align-items-center justify-content-between mb-9">
@@ -312,7 +304,6 @@
             </div>
           </div>
         </div>
-        @include('partials.footer')
       </div>
     </div>
   </div>
@@ -323,7 +314,7 @@
   <script src="{{ asset('assets/libs/apexcharts/dist/apexcharts.min.js') }}"></script>
   <script src="{{ asset('assets/libs/simplebar/dist/simplebar.js') }}"></script>
   <script>window.dashboardData = @json($dashboardData);</script>
-  <script src="{{ asset('assets/js/dashboard.js') }}"></script>
+  <script src="{{ asset('assets/js/dashboard.js') }}?v={{ filemtime(public_path('assets/js/dashboard.js')) }}"></script>
 </body>
 
 </html>

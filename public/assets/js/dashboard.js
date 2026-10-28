@@ -1,10 +1,35 @@
 $(function () {
   const dashboardData = window.dashboardData;
+  const dailyChartEl = document.querySelector("#chart");
+
+  // Tinggi grafik mengikuti sisa ruang di dalam kartu, supaya bagian bawah
+  // grafik menyentuh batas kotak (dikurangi offset bawaan ApexCharts 15px).
+  function dailyChartHeight() {
+    if (!dailyChartEl) {
+      return 345;
+    }
+
+    const body = dailyChartEl.parentElement;
+    const bodyHeight = body.getBoundingClientRect().height;
+    const bodyStyle = window.getComputedStyle(body);
+    const paddingY = parseFloat(bodyStyle.paddingTop || 0) + parseFloat(bodyStyle.paddingBottom || 0);
+    const header = dailyChartEl.previousElementSibling;
+    let headerHeight = 0;
+
+    if (header) {
+      headerHeight = header.getBoundingClientRect().height
+        + parseFloat(window.getComputedStyle(header).marginBottom || 0);
+    }
+
+    const available = bodyHeight - paddingY - headerHeight;
+
+    return Math.max(320, Math.round(available));
+  }
 
   // =====================================
   // Daily sales and purchases
   // =====================================
-  var chart = {
+  var dailyChartOptions = {
     series: [
       { name: "Penjualan (HJ)", data: dashboardData.sales },
       { name: "Pembelian (HB)", data: dashboardData.purchases },
@@ -27,8 +52,8 @@ $(function () {
     plotOptions: {
       bar: {
         horizontal: false,
-        columnWidth: "35%",
-        borderRadius: [6],
+        columnWidth: "60%",
+        borderRadius: [5],
         borderRadiusApplication: 'end',
         borderRadiusWhenStacked: 'all'
       },
@@ -111,9 +136,6 @@ $(function () {
 
 
   };
-
-  var chart = new ApexCharts(document.querySelector("#chart"), chart);
-  chart.render();
 
 
   // =====================================
@@ -225,4 +247,19 @@ $(function () {
     },
   };
   new ApexCharts(document.querySelector("#earning"), earning).render();
+
+  // Grafik harian dirender paling akhir supaya tinggi kartu kanan sudah final.
+  // Tingginya dihitung agar bagian bawah grafik menyentuh batas kotak.
+  function renderDailyChart() {
+    dailyChartOptions.chart.height = dailyChartHeight();
+    new ApexCharts(dailyChartEl, dailyChartOptions).render();
+    // ApexCharts menambah 15px pada min-height container; hilangkan supaya pas.
+    dailyChartEl.style.minHeight = "0px";
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(renderDailyChart);
+  } else {
+    renderDailyChart();
+  }
 })

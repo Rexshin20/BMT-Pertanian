@@ -9,3 +9,7 @@
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+
+public/assets/libs/** linguist-vendored=true
+package-lock.json linguist-generated=true
+public/assets/js/app.min.js linguist-generated=true

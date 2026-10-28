@@ -1,7 +1,7 @@
 @extends('layouts.modernize')
 
 @section('title', 'View Pembelian')
-@section('page-title', 'View Pembelian (HB)')
+@section('page-title', 'View Pembelian')
 
 @section('content')
 <div class="card">
@@ -16,19 +16,24 @@
     <div class="table-responsive">
       <table id="pembelian-table" class="table table-hover align-middle text-nowrap mb-0">
         <thead>
-          <tr><th>No.</th><th>Tgl</th><th>ID</th><th>Nama Pemilik</th><th>Nama Barang</th><th>Unit</th><th class="text-end">Harga HB / Unit</th><th class="text-end">Jumlah</th></tr>
+          <tr>
+            <th class="text-center" style="width: 56px;">No.</th>
+            <th class="text-center" style="width: 96px;">Tgl</th>
+            <th style="min-width: 240px;">Nama Barang</th>
+            <th class="text-center" style="width: 80px;">Unit</th>
+            <th class="text-center" style="width: 130px;">Harga</th>
+            <th class="text-center" style="width: 110px;">Jumlah</th>
+          </tr>
         </thead>
         <tbody>
           @foreach ($pembelians as $pembelian)
-            <tr data-date="{{ $pembelian->tanggal->format('Y-m-d') }}" data-owner-code="{{ $pembelian->produk->pemilik->kode ?? '' }}">
-              <td>{{ $loop->iteration }}</td>
-              <td data-order="{{ $pembelian->tanggal->format('Y-m-d') }}">{{ $pembelian->tanggal->format('d/m/Y') }}</td>
-              <td>{{ $pembelian->produk->pemilik?->id_tampilan ?? '-' }}</td>
-              <td>{{ $pembelian->produk->pemilik?->nama ?? 'Belum ditentukan' }}</td>
-              <td class="fw-semibold">{{ $pembelian->produk->nama }}</td>
-              <td>{{ $pembelian->satuan ?: $pembelian->produk->satuan }}</td>
-              <td class="text-end" data-order="{{ $pembelian->harga_beli }}">Rp {{ number_format((float) $pembelian->harga_beli, 2, ',', '.') }}</td>
-              <td class="text-end fw-semibold" data-order="{{ $pembelian->jumlah }}">{{ rtrim(rtrim(number_format((float) $pembelian->jumlah, 3, ',', '.'), '0'), ',') }}</td>
+            <tr data-date="{{ $pembelian->tanggal->format('Y-m-d') }}" data-owner-code="{{ $pembelian->ownerKode ?? '' }}">
+              <td class="text-center">{{ $loop->iteration }}</td>
+              <td class="text-center" data-order="{{ $pembelian->tanggal->format('Y-m-d') }}">{{ $pembelian->tanggal->format('d/m/Y') }}</td>
+              <td class="fw-semibold">{{ $pembelian->nama_barang }}</td>
+              <td class="text-center">{{ $pembelian->satuan }}</td>
+              <td class="text-center" data-order="{{ $pembelian->harga }}">Rp {{ number_format((float) $pembelian->harga, 2, ',', '.') }}</td>
+              <td class="text-center fw-semibold" data-order="{{ $pembelian->jumlah }}">{{ rtrim(rtrim(number_format((float) $pembelian->jumlah, 3, ',', '.'), '0'), ',') }}</td>
             </tr>
           @endforeach
         </tbody>
@@ -37,6 +42,17 @@
   </div>
 </div>
 @endsection
+
+@include('keuangan.partials.export-buttons', [
+    'tableId' => 'pembelian-table',
+    'judulExport' => 'PEMBELIAN',
+    'prefixFile' => 'Pembelian',
+    'kolomHuruf' => ['A', 'B', 'C', 'D', 'E', 'F'],
+    'tipeKolom' => ['A' => 'num', 'B' => 'text', 'C' => 'text', 'D' => 'text', 'E' => 'num', 'F' => 'num'],
+    'lebarExcel' => [6, 12, 34, 10, 18, 12],
+    'lebarPdf' => ['6%', '12%', '40%', '10%', '20%', '12%'],
+    'rataKiri' => [2],
+])
 
 @include('keuangan.partials.data-table', [
     'tableId' => 'pembelian-table',

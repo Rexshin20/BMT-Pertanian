@@ -1,7 +1,7 @@
 @extends('layouts.modernize')
 
 @section('title', 'Create Penjualan')
-@section('page-title', 'Create Penjualan / Stok Keluar (HJ)')
+@section('page-title', 'Create Penjualan / Stok Keluar')
 
 @section('content')
 <div class="row justify-content-center">
@@ -63,7 +63,7 @@
                 @error('satuan')<div class="text-danger fs-3 mt-1">{{ $message }}</div>@enderror
               </div>
               <div class="col-8 col-md-3">
-                <label class="form-label" for="harga_jual">Harga jual (HJ) <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> wajib diisi</span></label>
+                <label class="form-label" for="harga_jual">Harga jual <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> wajib diisi</span></label>
                 <div class="input-group"><span class="input-group-text">Rp</span><input class="form-control" type="text" id="harga_jual_display" value="{{ old('harga_jual') ? number_format((float) old('harga_jual'), 2, ',', '.') : '' }}" inputmode="decimal" autocomplete="off" required><input type="hidden" id="harga_jual" name="harga_jual" value="{{ old('harga_jual') }}"></div>
                 <small class="text-muted">Per unit</small>
                 @error('harga_jual')<div class="text-danger fs-3 mt-1">{{ $message }}</div>@enderror

@@ -129,10 +129,9 @@ class BookkeepingTest extends TestCase
             ->assertSee('Tgl')
             ->assertSee('Nama Barang')
             ->assertSee('Unit')
-            ->assertSee('Harga HB')
-            ->assertSee('Jumlah HB')
-            ->assertSee('Harga HJ')
-            ->assertSee('Jumlah HJ')
+            ->assertSee('Harga Beli')
+            ->assertSee('Jumlah')
+            ->assertSee('Harga Jual')
             ->assertSee('Rp 100,00')
             ->assertSee('Rp 250,00')
             ->assertSee('Rp 150,00')
@@ -190,7 +189,7 @@ class BookkeepingTest extends TestCase
             ->assertSee('Barang Pemilik laba')
             ->assertDontSee('Barang Pemilik rugi')
             ->assertSee('Laporan Laba Rugi - Pemilik laba')
-            ->assertSee('<td>'.$profitOwner->kode.'</td>', false)
+            ->assertDontSee('<td>'.$profitOwner->kode.'</td>', false)
             ->assertSee('name="tanggal_mulai" value="2026-10-16"', false)
             ->assertSee('<option value="'.$profitOwner->kode.'" selected>', false);
     }
@@ -318,7 +317,7 @@ class BookkeepingTest extends TestCase
             ->assertSee('Barang Dashboard')
             ->assertSee('Rp 700')
             ->assertSee('Rp 200')
-            ->assertSee('Koperasi Konsumen Cinde Barokah Sejahtera © '.now()->year.' All Right Reserved.')
+            ->assertDontSee('app-layout-footer', false)
             ->assertDontSee('Ringkasan Stok Barang')
             ->assertDontSee('AdminMart.com')
             ->assertDontSee('ThemeWagon')
@@ -360,9 +359,10 @@ class BookkeepingTest extends TestCase
                 ->assertDontSee('<a href="http://localhost" class="bmt-brand', false)
                 ->assertSee('>Edit Account</span>', false)
                 ->assertSee('ti-user', false)
-                ->assertSee('app-fixed-footer', false)
+                ->assertSee('>Edit Account</span>', false)
+                ->assertSee('ti-user', false)
+                ->assertDontSee('app-layout-footer', false)
                 ->assertSee('>Logout</span>', false)
-                ->assertSee('Koperasi Konsumen Cinde Barokah Sejahtera © '.now()->year.' All Right Reserved.')
                 ->assertDontSee('>Login</span>', false);
         }
 
@@ -373,7 +373,7 @@ class BookkeepingTest extends TestCase
             ->assertSee('data-auto-submit-owner-filter', false)
             ->assertDontSee('Filter Nama')
             ->assertSee('id="pembelian-table-date-to"', false)
-            ->assertSee('data-date-filter-reset="pembelian-table"', false)
+            ->assertDontSee('Reset tanggal')
             ->assertSee('cdn.datatables.net/2.3.4')
             ->assertSee("search: 'Cari:'", false)
             ->assertDontSee('Dari tanggal')
@@ -397,7 +397,7 @@ class BookkeepingTest extends TestCase
             ->assertDontSee('Filter Nama')
             ->assertSee('id="penjualan-table-date-from"', false)
             ->assertSee('id="penjualan-table-date-to"', false)
-            ->assertSee('data-date-filter-reset="penjualan-table"', false)
+            ->assertDontSee('Reset tanggal')
             ->assertSee('cdn.datatables.net/2.3.4')
             ->assertSee("search: 'Cari:'", false)
             ->assertDontSee('Dari tanggal')
@@ -421,11 +421,11 @@ class BookkeepingTest extends TestCase
             ->assertSee('id="laba-rugi-table-date-to"', false)
             ->assertSee('name="tanggal_mulai"', false)
             ->assertSee('name="tanggal_selesai"', false)
-            ->assertSee('data-date-filter-reset="laba-rugi-table"', false)
+            ->assertDontSee('Reset tanggal')
             ->assertSee('name="pemilik"', false)
             ->assertSee('data-auto-submit-owner-filter', false)
-            ->assertSee('<th>ID Pemilik</th>', false)
-            ->assertSee('<th>Nama Pemilik</th>', false)
+            ->assertDontSee('<th>ID Pemilik</th>', false)
+            ->assertDontSee('<th>Nama Pemilik</th>', false)
             ->assertSee('buttons/3.2.5/js/dataTables.buttons.min.js')
             ->assertSee('buttons.html5.min.js')
             ->assertSee("extend: 'csvHtml5'", false)
@@ -433,8 +433,8 @@ class BookkeepingTest extends TestCase
             ->assertSee("extend: 'pdfHtml5'", false)
             ->assertSee('justify-content: center', false)
             ->assertSee("api.rows({ search: 'applied', order: 'applied' })", false)
-            ->assertSee('Harga HB')
-            ->assertSee('Harga HJ');
+            ->assertSee('Harga Beli')
+            ->assertSee('Harga Jual');
 
         $this->get(route('pembelian.create'))
             ->assertSee('Create Pembelian')
@@ -468,13 +468,13 @@ class BookkeepingTest extends TestCase
             ->assertSee('Nama Barang <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('Tgl <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('Unit <span class="text-danger" aria-hidden="true">*</span>', false)
-            ->assertSee('Harga beli (HB) <span class="text-danger" aria-hidden="true">*</span>', false)
+            ->assertSee('Harga beli <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('Jumlah <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('No.')
             ->assertSee('Tgl')
             ->assertSee('Unit')
             ->assertSee('Jumlah')
-            ->assertSee('Harga beli (HB)')
+            ->assertSee('Harga beli')
             ->assertSee('name="nama_barang"', false)
             ->assertDontSee('<select', false)
             ->assertSee('name="pemilik_kode"', false)
@@ -494,12 +494,12 @@ class BookkeepingTest extends TestCase
             ->assertSee('Nama Barang <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('Tgl <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('Unit <span class="text-danger" aria-hidden="true">*</span>', false)
-            ->assertSee('Harga jual (HJ) <span class="text-danger" aria-hidden="true">*</span>', false)
+            ->assertSee('Harga jual <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('Jumlah <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('No.')
             ->assertSee('Tgl')
             ->assertSee('Unit')
-            ->assertSee('Harga jual (HJ)')
+            ->assertSee('Harga jual')
             ->assertSee('name="produk_id"', false)
             ->assertSee('name="pemilik_kode"', false)
             ->assertSee('Contoh Form')
@@ -513,7 +513,7 @@ class BookkeepingTest extends TestCase
             ->assertSee('id="satuan" name="satuan"', false)
             ->assertSee('type="text" id="satuan" name="satuan"', false)
             ->assertSee('id="total_jumlah" value="0,00" readonly', false)
-            ->assertSee('for="harga_jual">Harga jual (HJ) <span class="text-danger" aria-hidden="true">*</span>', false)
+            ->assertSee('for="harga_jual">Harga jual <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('for="jumlah">Jumlah <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('action="http://localhost/penjualan"', false);
     }
@@ -763,7 +763,7 @@ class BookkeepingTest extends TestCase
             ->assertSee('Tambah Barang')
             ->assertSee('ti-edit', false)
             ->assertSee('ti-trash', false)
-            ->assertDontSee('<th>Stok</th>', false)
+            ->assertSee('Stok</th>', false)
             ->assertDontSee('<th class="text-end">HB Terakhir</th>', false)
             ->assertDontSee('<th class="text-end">Harga Jual</th>', false)
             ->assertSee(route('produk.edit', $product))
@@ -804,6 +804,51 @@ class BookkeepingTest extends TestCase
 
         $this->assertDatabaseMissing('produks', ['id' => $product->id]);
         $this->assertDatabaseMissing('pembelians', ['produk_id' => $product->id]);
+    }
+
+    public function test_product_list_shows_stock_that_updates_automatically_from_transactions(): void
+    {
+        $owner = $this->createPemilik('Pemilik stok otomatis');
+        $product = Produk::query()->create([
+            'pemilik_id' => $owner->id,
+            'nama' => 'NARUTO',
+            'satuan' => 'Botol',
+            'harga_beli' => '20000',
+            'harga_jual' => '25000',
+            'stok' => '0',
+        ]);
+
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $owner->kode,
+            'nama_barang' => 'NARUTO',
+            'tanggal' => '2026-10-02',
+            'satuan' => 'Botol',
+            'jumlah' => '10',
+            'harga_beli' => '20000',
+        ])->assertRedirect(route('pembelian.create'));
+
+        $this->post(route('penjualan.store'), [
+            'pemilik_kode' => $owner->kode,
+            'produk_id' => $product->id,
+            'tanggal' => '2026-10-06',
+            'satuan' => 'Botol',
+            'jumlah' => '4',
+            'harga_jual' => '25000',
+        ])->assertRedirect(route('penjualan.create'));
+
+        $this->assertSame('6.000', $product->fresh()->stok);
+
+        $this->get(route('produk.index'))
+            ->assertOk()
+            ->assertSee('Stok</th>', false)
+            ->assertSee('data-order="6"', false);
+
+        $product->forceFill(['stok' => '-2'])->save();
+
+        $this->get(route('produk.index'))
+            ->assertOk()
+            ->assertSee('data-order="-2"', false)
+            ->assertSee('text-end fw-semibold text-danger', false);
     }
 
     public function test_owner_master_supports_editing_and_deleting_linked_records(): void

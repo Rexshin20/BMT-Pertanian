@@ -6,7 +6,7 @@
   <title>@yield('title', 'Koperasi Konsumen Cinde Barokah Sejahtera') - Koperasi Konsumen Cinde Barokah Sejahtera</title>
   <link rel="shortcut icon" type="image/png" href="{{ asset('assets/images/logos/bmt-cinde-barokah.png') }}">
   <link rel="stylesheet" href="{{ asset('assets/css/styles.min.css') }}">
-  <link rel="stylesheet" href="{{ asset('assets/css/bmt-theme.css') }}">
+  <link rel="stylesheet" href="{{ asset('assets/css/bmt-theme.css') }}?v={{ filemtime(public_path('assets/css/bmt-theme.css')) }}">
   @stack('styles')
 </head>
 <body>
@@ -31,17 +31,17 @@
             <li class="nav-small-cap"><i class="ti ti-dots nav-small-cap-icon fs-4"></i><span class="hide-menu">VIEW</span></li>
             <li class="sidebar-item">
               <a class="sidebar-link {{ request()->routeIs('penjualan.index', 'penjualan.master-data') ? 'active' : '' }}" href="{{ route('penjualan.index') }}">
-                <span><i class="ti ti-shopping-cart"></i></span><span class="hide-menu">Penjualan (HJ)</span>
+                <span><i class="ti ti-shopping-cart"></i></span><span class="hide-menu">Penjualan</span>
               </a>
             </li>
             <li class="sidebar-item">
               <a class="sidebar-link {{ request()->routeIs('pembelian.index', 'pembelian.master-data') ? 'active' : '' }}" href="{{ route('pembelian.index') }}">
-                <span><i class="ti ti-basket"></i></span><span class="hide-menu">Pembelian (HB)</span>
+                <span><i class="ti ti-basket"></i></span><span class="hide-menu">Pembelian</span>
               </a>
             </li>
             <li class="sidebar-item">
               <a class="sidebar-link {{ request()->routeIs('laporan.laba-rugi') ? 'active' : '' }}" href="{{ route('laporan.laba-rugi') }}">
-                <span><i class="ti ti-report-money"></i></span><span class="hide-menu">Laba Rugi (HB & HJ)</span>
+                <span><i class="ti ti-report-money"></i></span><span class="hide-menu">Laba Rugi</span>
               </a>
             </li>
             <li class="sidebar-item">
@@ -63,6 +63,11 @@
             <li class="sidebar-item">
               <a class="sidebar-link {{ request()->routeIs('pembelian.create') ? 'active' : '' }}" href="{{ route('pembelian.create') }}">
                 <span><i class="ti ti-receipt"></i></span><span class="hide-menu">Create Pembelian</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link {{ request()->routeIs('impor.*') ? 'active' : '' }}" href="{{ route('impor.index') }}">
+                <span><i class="ti ti-file-import"></i></span><span class="hide-menu">Impor</span>
               </a>
             </li>
             <li class="nav-small-cap"><i class="ti ti-dots nav-small-cap-icon fs-4"></i><span class="hide-menu">ACCOUNT</span></li>
@@ -122,7 +127,6 @@
           </div>
         @endif
         @yield('content')
-        @include('partials.footer')
       </div>
     </div>
   </div>

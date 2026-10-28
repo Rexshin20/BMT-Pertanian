@@ -33,17 +33,32 @@
           <p class="text-muted">Leave the new password fields blank to keep your current password.</p>
           <div class="mb-3">
             <label class="form-label" for="current_password">Current Password</label>
-            <input class="form-control" type="password" id="current_password" name="current_password" autocomplete="current-password" required>
+            <div class="input-group">
+              <input class="form-control" type="password" id="current_password" name="current_password" autocomplete="current-password" required>
+              <button class="btn bmt-pass-toggle" type="button" data-password-toggle="current_password" title="Tampilkan / sembunyikan password" aria-label="Tampilkan atau sembunyikan password">
+                <i class="ti ti-eye"></i>
+              </button>
+            </div>
             @error('current_password')<div class="text-danger mt-1">{{ $message }}</div>@enderror
           </div>
           <div class="mb-3">
             <label class="form-label" for="password">New Password</label>
-            <input class="form-control" type="password" id="password" name="password" autocomplete="new-password" minlength="8">
+            <div class="input-group">
+              <input class="form-control" type="password" id="password" name="password" autocomplete="new-password" minlength="8">
+              <button class="btn bmt-pass-toggle" type="button" data-password-toggle="password" title="Tampilkan / sembunyikan password" aria-label="Tampilkan atau sembunyikan password">
+                <i class="ti ti-eye"></i>
+              </button>
+            </div>
             @error('password')<div class="text-danger mt-1">{{ $message }}</div>@enderror
           </div>
           <div class="mb-4">
             <label class="form-label" for="password_confirmation">Confirm New Password</label>
-            <input class="form-control" type="password" id="password_confirmation" name="password_confirmation" autocomplete="new-password" minlength="8">
+            <div class="input-group">
+              <input class="form-control" type="password" id="password_confirmation" name="password_confirmation" autocomplete="new-password" minlength="8">
+              <button class="btn bmt-pass-toggle" type="button" data-password-toggle="password_confirmation" title="Tampilkan / sembunyikan password" aria-label="Tampilkan atau sembunyikan password">
+                <i class="ti ti-eye"></i>
+              </button>
+            </div>
           </div>
           <button class="btn btn-primary" type="submit">Save Account</button>
         </form>
@@ -52,3 +67,17 @@
   </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+  document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const input = document.getElementById(button.getAttribute('data-password-toggle'));
+      if (!input) return;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      button.querySelector('i').className = show ? 'ti ti-eye-off' : 'ti ti-eye';
+    });
+  });
+</script>
+@endpush

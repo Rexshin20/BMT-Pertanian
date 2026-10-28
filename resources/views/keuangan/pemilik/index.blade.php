@@ -32,18 +32,24 @@
       <div class="card-body">
         <h5 class="card-title fw-semibold mb-4">Daftar Nama</h5>
         <div class="table-responsive">
-          <table id="pemilik-table" class="table table-hover align-middle text-nowrap mb-0">
+          <table id="pemilik-table" class="table table-hover align-middle mb-0">
             <thead>
-              <tr><th>ID</th><th>Nama</th><th>Alamat / Desa</th><th class="text-end">Jenis Barang</th><th class="text-end">Aksi</th></tr>
+              <tr>
+                <th class="text-center text-nowrap" style="width: 64px;">ID</th>
+                <th style="min-width: 140px;">Nama</th>
+                <th style="min-width: 170px;">Alamat / Desa</th>
+                <th class="text-end text-nowrap" style="width: 110px;">Jumlah Barang</th>
+                <th class="text-end text-nowrap" style="width: 120px;">Aksi</th>
+              </tr>
             </thead>
             <tbody>
               @foreach ($pemiliks as $pemilik)
                 <tr>
-                  <td class="fw-semibold">{{ $pemilik->id_tampilan }}</td>
-                  <td>{{ $pemilik->nama }}</td>
-                  <td class="text-muted">{{ $pemilik->alamat ?? '-' }}</td>
-                  <td class="text-end">{{ $pemilik->produks_count }}</td>
-                  <td class="text-end">
+                  <td class="text-center fw-semibold text-nowrap">{{ $pemilik->id_tampilan }}</td>
+                  <td class="text-break">{{ $pemilik->nama }}</td>
+                  <td class="text-muted text-break">{{ $pemilik->alamat ?? '-' }}</td>
+                  <td class="text-end text-nowrap">{{ $pemilik->produks_count }}</td>
+                  <td class="text-end text-nowrap">
                     <div class="d-inline-flex gap-1">
                       <a class="btn btn-sm btn-primary" href="{{ route('pemilik.edit', $pemilik) }}" aria-label="Edit {{ $pemilik->nama }}" title="Edit {{ $pemilik->nama }}">
                         <i class="ti ti-edit" aria-hidden="true"></i>

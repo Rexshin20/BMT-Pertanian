@@ -44,7 +44,44 @@ class LaporanLabaRugiController extends Controller
             'pemilikTerpilihNama' => ! empty($filters['pemilik'])
                 ? Pemilik::query()->where('kode', $filters['pemilik'])->value('nama')
                 : null,
-            'penjualans' => $query->latest('tanggal')->latest('id')->get(),
+            'pemilikTerpilihObj' => ! empty($filters['pemilik'])
+                ? Pemilik::query()->where('kode', $filters['pemilik'])->first()
+                : null,
+            'penjualans' => $query
+                ->latest('tanggal')
+                ->latest('id')
+                ->get()
+                ->map(fn (Penjualan $p) => (object) [
+                    'tanggal' => $p->tanggal,
+                    'nama_barang' => trim($p->produk->nama),
+                    'satuan' => trim($p->satuan ?: $p->produk->satuan),
+                    'harga_beli' => $p->harga_beli_satuan,
+                    'harga_jual' => $p->harga_jual,
+                    'jumlah' => $p->jumlah,
+                    'laba' => $p->laba,
+                    'ownerKode' => $p->produk->pemilik->kode ?? '',
+                ])
+                ->when(empty($filters['pemilik']), fn ($rows) => $rows
+                    // "Semua nama": penjualan yang tanggal, barang, satuan, dan harganya
+                    // sama digabung jadi satu baris (jumlah + laba dijumlah).
+                    ->groupBy(fn ($p) => $p->tanggal->format('Y-m-d')
+                        .'|'.mb_strtolower($p->nama_barang)
+                        .'|'.mb_strtolower($p->satuan)
+                        .'|'.sprintf('%.4f', (float) $p->harga_beli)
+                        .'|'.sprintf('%.4f', (float) $p->harga_jual))
+                    ->map(fn ($group) => $group->count() === 1
+                        ? $group->first()
+                        : (object) [
+                            'tanggal' => $group->first()->tanggal,
+                            'nama_barang' => $group->first()->nama_barang,
+                            'satuan' => $group->first()->satuan,
+                            'harga_beli' => $group->first()->harga_beli,
+                            'harga_jual' => $group->first()->harga_jual,
+                            'jumlah' => (string) $group->sum('jumlah'),
+                            'laba' => (string) $group->sum('laba'),
+                            'ownerKode' => '',
+                        ])
+                    ->values()),
         ]);
     }
 }

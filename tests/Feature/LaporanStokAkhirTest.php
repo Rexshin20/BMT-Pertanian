@@ -70,6 +70,47 @@ class LaporanStokAkhirTest extends TestCase
             ->assertStatus(302);
     }
 
+    public function test_berat_bersih_diambil_dari_satuan_bila_nama_barang_tidak_memuat_ukuran(): void
+    {
+        $lastCode = (int) Pemilik::query()
+            ->selectRaw('MAX(CAST(kode AS DECIMAL(20, 0))) AS kode_terakhir')
+            ->value('kode_terakhir');
+        $kode = str_pad((string) ($lastCode + 1), 3, '0', STR_PAD_LEFT);
+
+        $pemilik = Pemilik::query()->create(['kode' => $kode, 'nama' => 'Pemilik ukuran']);
+
+        $berukuran = Produk::query()->create([
+            'nama' => 'gramason',
+            'pemilik_id' => $pemilik->id,
+            'satuan' => '200 ml',
+            'harga_jual' => 60000,
+        ]);
+        $berukuran->increment('stok', 5);
+        $this->createPenjualan($berukuran, '2026-10-05', 3);
+
+        $tanpaUkuran = Produk::query()->create([
+            'nama' => 'Cangkul',
+            'pemilik_id' => $pemilik->id,
+            'satuan' => 'pcs',
+            'harga_jual' => 50000,
+        ]);
+        $tanpaUkuran->increment('stok', 2);
+
+        $response = $this->get(route('laporan.stok-akhir', [
+            'tanggal_mulai' => '2026-10-01',
+            'tanggal_selesai' => '2026-10-31',
+            'pemilik' => $kode,
+        ]));
+
+        $response->assertOk()
+            ->assertSee('<td class="text-center">200 ml</td>', false)
+            ->assertDontSee('<td class="text-center">pcs</td>', false);
+
+        $laporan = collect($response->viewData('laporans'))->keyBy('nama_barang');
+        $this->assertSame('200 ml', $laporan['gramason']->berat_bersih);
+        $this->assertSame('', $laporan['Cangkul']->berat_bersih);
+    }
+
     private function createPenjualan(Produk $produk, string $tanggal, float $jumlah): void
     {
         $this->post(route('penjualan.store'), [
