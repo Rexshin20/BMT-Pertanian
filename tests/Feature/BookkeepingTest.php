@@ -57,9 +57,10 @@ class BookkeepingTest extends TestCase
             ->assertSee('Nama Barang')
             ->assertSee('Unit')
             ->assertSee('Harga')
-            ->assertSee('Jumlah')
+            ->assertSee('Total')
             ->assertSee('per bungkus')
             ->assertSee('>10</td>', false)
+            ->assertSee('Rp 82.500,00')
             ->assertDontSee('>10,000</td>', false);
     }
 
@@ -113,8 +114,9 @@ class BookkeepingTest extends TestCase
             ->assertSee('No.')
             ->assertSee('Unit')
             ->assertSee('Harga')
-            ->assertSee('Jumlah')
+            ->assertSee('Total')
             ->assertSee('Rp 150,00')
+            ->assertSee('Rp 375,00')
             ->assertSee('Budi')
             ->assertSee('per kotak')
             ->assertSee('>2,5</td>', false);
@@ -130,8 +132,9 @@ class BookkeepingTest extends TestCase
             ->assertSee('Nama Barang')
             ->assertSee('Unit')
             ->assertSee('Harga Beli')
-            ->assertSee('Jumlah')
+            ->assertSee('Total Beli')
             ->assertSee('Harga Jual')
+            ->assertSee('Total Jual')
             ->assertSee('Rp 100,00')
             ->assertSee('Rp 250,00')
             ->assertSee('Rp 150,00')
@@ -387,7 +390,7 @@ class BookkeepingTest extends TestCase
             ->assertSee('Nama Barang')
             ->assertSee('Unit')
             ->assertSee('Harga')
-            ->assertSee('Jumlah')
+            ->assertSee('Total')
             ->assertDontSee('+ Create Pembelian');
 
         $this->get(route('penjualan.index'))
@@ -409,7 +412,7 @@ class BookkeepingTest extends TestCase
             ->assertSee('Nama Barang')
             ->assertSee('Unit')
             ->assertSee('Harga')
-            ->assertSee('Jumlah')
+            ->assertSee('Total')
             ->assertDontSee('+ Create Penjualan');
 
         $this->get(route('laporan.laba-rugi'))

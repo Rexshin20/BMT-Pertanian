@@ -59,7 +59,7 @@
               </div>
               <div class="col-4 col-md-2">
                 <label class="form-label" for="satuan">Unit <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> wajib diisi</span></label>
-                <input class="form-control" type="text" id="satuan" name="satuan" value="{{ old('satuan') }}" placeholder="per pcs / per botol" maxlength="30" required>
+                <input class="form-control" type="text" id="satuan" name="satuan" value="{{ old('satuan') }}" maxlength="30" required>
                 @error('satuan')<div class="text-danger fs-3 mt-1">{{ $message }}</div>@enderror
               </div>
               <div class="col-8 col-md-3">

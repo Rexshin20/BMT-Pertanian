@@ -71,18 +71,18 @@
     </form>
     <div class="table-responsive">
       <table id="laba-rugi-table" class="table table-hover align-middle text-nowrap mb-0">
-        <thead><tr><th class="text-center" style="width: 56px;">No.</th><th class="text-center" style="width: 96px;">Tgl</th><th style="min-width: 240px;">Nama Barang</th><th class="text-center" style="width: 80px;">Unit</th><th class="text-center" style="width: 130px;">Harga Beli</th><th class="text-center" style="width: 100px;">Jumlah</th><th class="text-center" style="width: 130px;">Harga Jual</th><th class="text-center" style="width: 100px;">Jumlah</th><th class="text-center" style="width: 140px;">Laba / Rugi</th></tr></thead>
+        <thead><tr><th class="text-center" style="width: 56px;">No.</th><th class="text-center" style="width: 96px;">Tgl</th><th style="min-width: 240px;">Nama Barang</th><th class="text-center" style="width: 80px;">Unit</th><th class="text-center" style="width: 130px;">Harga Beli</th><th class="text-center" style="width: 130px;">Total Beli</th><th class="text-center" style="width: 130px;">Harga Jual</th><th class="text-center" style="width: 130px;">Total Jual</th><th class="text-center" style="width: 140px;">Laba / Rugi</th></tr></thead>
         <tbody>
           @foreach ($penjualans as $penjualan)
             <tr data-date="{{ $penjualan->tanggal->format('Y-m-d') }}" data-owner-code="{{ $penjualan->ownerKode ?? '' }}">
               <td class="text-center">{{ $loop->iteration }}</td>
               <td class="text-center" data-order="{{ $penjualan->tanggal->format('Y-m-d') }}">{{ $penjualan->tanggal->format('d/m/Y') }}</td>
-              <td class="fw-semibold">{{ $penjualan->nama_barang }}</td>
-              <td class="text-center">{{ $penjualan->satuan }}</td>
+              <td class="fw-semibold">{{ $penjualan->nama_barang }}@if (filled($penjualan->satuan)) <span class="text-muted fw-normal">({{ $penjualan->satuan }})</span>@endif</td>
+              <td class="text-center" data-order="{{ $penjualan->jumlah }}">{{ rtrim(rtrim(number_format((float) $penjualan->jumlah, 3, ',', '.'), '0'), ',') }}</td>
               <td class="text-center" data-order="{{ $penjualan->harga_beli }}">Rp {{ number_format((float) $penjualan->harga_beli, 2, ',', '.') }}</td>
-              <td class="text-center" data-order="{{ $penjualan->jumlah }}">{{ rtrim(rtrim(number_format((float) $penjualan->jumlah, 3, ',', '.'), '0'), ',') }}</td>
+              <td class="text-center" data-order="{{ (float) $penjualan->harga_beli * (float) $penjualan->jumlah }}">Rp {{ number_format((float) $penjualan->harga_beli * (float) $penjualan->jumlah, 2, ',', '.') }}</td>
               <td class="text-center" data-order="{{ $penjualan->harga_jual }}">Rp {{ number_format((float) $penjualan->harga_jual, 2, ',', '.') }}</td>
-              <td class="text-center" data-order="{{ $penjualan->jumlah }}">{{ rtrim(rtrim(number_format((float) $penjualan->jumlah, 3, ',', '.'), '0'), ',') }}</td>
+              <td class="text-center" data-order="{{ (float) $penjualan->harga_jual * (float) $penjualan->jumlah }}">Rp {{ number_format((float) $penjualan->harga_jual * (float) $penjualan->jumlah, 2, ',', '.') }}</td>
               <td class="text-center fw-semibold {{ (float) $penjualan->laba < 0 ? 'text-danger' : 'text-success' }}" data-order="{{ $penjualan->laba }}" title="{{ (float) $penjualan->laba < 0 ? 'Rugi' : 'Laba' }}">Rp {{ number_format((float) $penjualan->laba, 2, ',', '.') }}</td>
             </tr>
           @endforeach
@@ -99,9 +99,9 @@
     'prefixFile' => 'Laba-Rugi',
     'orientasi' => 'landscape',
     'kolomHuruf' => ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
-    'tipeKolom' => ['A' => 'num', 'B' => 'text', 'C' => 'text', 'D' => 'text', 'E' => 'num', 'F' => 'num', 'G' => 'num', 'H' => 'num', 'I' => 'num'],
-    'lebarExcel' => [6, 12, 34, 10, 16, 12, 16, 12, 16],
-    'lebarPdf' => ['5%', '10%', '30%', '7%', '12%', '8%', '12%', '8%', '8%'],
+    'tipeKolom' => ['A' => 'num', 'B' => 'text', 'C' => 'text', 'D' => 'num', 'E' => 'num', 'F' => 'num', 'G' => 'num', 'H' => 'num', 'I' => 'num'],
+    'lebarExcel' => [6, 12, 32, 10, 15, 16, 15, 16, 15],
+    'lebarPdf' => ['4%', '9%', '24%', '6%', '11%', '12%', '11%', '12%', '11%'],
     'rataKiri' => [2],
 ])
 
