@@ -164,7 +164,7 @@
 }
 
 .bmt-login-page {
-  padding: 24px;
+  padding: 24px 24px 56px;
   background:
     linear-gradient(135deg, rgb(10 42 26 / 58%), rgb(13 31 23 / 38%)),
     url("../images/backgrounds/bmt-store-login.jpeg") center / cover no-repeat;
@@ -172,10 +172,34 @@
 
 .bmt-login-card {
   overflow: hidden;
+  max-width: 340px;
+  margin-inline: auto;
   border: 1px solid rgb(255 255 255 / 65%);
   border-radius: 18px;
   background: rgb(255 255 255 / 96%);
   box-shadow: 0 24px 70px rgb(0 0 0 / 28%);
+}
+
+.bmt-login-card .card-body {
+  padding: 20px;
+}
+
+.bmt-login-card .bmt-auth-brand {
+  padding-block: 8px;
+}
+
+.bmt-login-card .bmt-auth-brand img {
+  width: 64px;
+  height: 64px;
+}
+
+.bmt-login-card .bmt-auth-brand strong {
+  font-size: 14px;
+}
+
+.bmt-login-card h4 {
+  margin-bottom: 16px;
+  font-size: 1.05rem;
 }
 
 .app-fixed-footer {
@@ -282,7 +306,7 @@
   }
 
   .bmt-login-page {
-    padding: 12px;
+    padding: 12px 12px 48px;
   }
 
   .bmt-login-card .card-body {

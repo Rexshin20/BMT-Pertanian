@@ -378,7 +378,7 @@
         items.forEach(function (it) { zip.file('xl/media/' + it.file, it.b64, { base64: true }); });
 
         // xl/drawings/_rels/drawing1.xml.rels -> media
-        let relsDrawing = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        let relsDrawing = '<' + '?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
           '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
         items.forEach(function (it, i) {
           relsDrawing += '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/' + it.file + '"/>';
@@ -397,7 +397,7 @@
             '<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + it.cx + '" cy="' + it.cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>' +
             '</xdr:pic><xdr:clientData/></xdr:oneCellAnchor>';
         });
-        const drawingXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        const drawingXml = '<' + '?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
           '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"' +
           ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"' +
           ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
@@ -406,7 +406,7 @@
 
         // xl/worksheets/_rels/sheet1.xml.rels -> drawing
         zip.file('xl/worksheets/_rels/sheet1.xml.rels',
-          '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<' + '?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
           '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
           '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>' +
           '</Relationships>');

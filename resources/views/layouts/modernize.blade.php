@@ -99,9 +99,6 @@
           <div class="navbar-collapse justify-content-end px-0">
             <ul class="navbar-nav flex-row ms-auto align-items-center justify-content-end">
               <li class="nav-item"><span class="nav-link">{{ auth()->user()->name }}</span></li>
-              <li class="nav-item">
-                <img src="{{ asset('assets/images/profile/user-1.jpg') }}" alt="Profil" width="35" height="35" class="rounded-circle">
-              </li>
             </ul>
           </div>
         </nav>

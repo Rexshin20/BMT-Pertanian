@@ -143,24 +143,7 @@
           </ul>
           <div class="navbar-collapse justify-content-end px-0" id="navbarNav">
             <ul class="navbar-nav flex-row ms-auto align-items-center justify-content-end">
-              <li class="nav-item dropdown">
-                <a class="nav-link nav-icon-hover" href="javascript:void(0)" id="drop2" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <img src="{{ asset('assets/images/profile/user-1.jpg') }}" alt="" width="35" height="35" class="rounded-circle">
-                </a>
-                <div class="dropdown-menu dropdown-menu-end dropdown-menu-animate-up" aria-labelledby="drop2">
-                  <div class="message-body">
-                    <a href="{{ route('account.edit') }}" class="d-flex align-items-center gap-2 dropdown-item">
-                      <i class="ti ti-user fs-6"></i>
-                      <p class="mb-0 fs-3">My Profile</p>
-                    </a>
-                    <form method="POST" action="{{ route('logout') }}">
-                      @csrf
-                      <button type="submit" class="btn btn-outline-primary mx-3 mt-2 d-block">Logout</button>
-                    </form>
-                  </div>
-                </div>
-              </li>
+              <li class="nav-item"><span class="nav-link">{{ auth()->user()->name }}</span></li>
             </ul>
           </div>
         </nav>
@@ -216,7 +199,7 @@
                 <!-- Monthly Earnings -->
                 <div class="card">
                   <div class="card-body">
-                    <div class="row alig n-items-start">
+                    <div class="row align-items-start">
                       <div class="col-8">
                         <h5 class="card-title mb-9 fw-semibold">Laba / Rugi Bulan Ini</h5>
                         <h4 class="fw-semibold mb-3 {{ $dashboardData['monthProfit'] < 0 ? 'text-danger' : 'text-success' }}">Rp {{ number_format($dashboardData['monthProfit'], 0, ',', '.') }}</h4>
@@ -273,26 +256,28 @@
                   <a href="{{ route('penjualan.index') }}" class="text-primary">Lihat semua</a>
                 </div>
                 <div class="table-responsive">
-                  <table class="table text-nowrap mb-0 align-middle">
+                  <table class="table table-hover text-nowrap mb-0 align-middle dashboard-transaction-table">
                     <thead class="text-dark fs-4">
                       <tr>
-                        <th class="border-bottom-0"><h6 class="fw-semibold mb-0">No.</h6></th>
-                        <th class="border-bottom-0"><h6 class="fw-semibold mb-0">Tgl</h6></th>
-                        <th class="border-bottom-0"><h6 class="fw-semibold mb-0">Nama Barang</h6></th>
-                        <th class="border-bottom-0"><h6 class="fw-semibold mb-0">Transaksi</h6></th>
-                        <th class="border-bottom-0 text-end"><h6 class="fw-semibold mb-0">Jumlah</h6></th>
-                        <th class="border-bottom-0 text-end"><h6 class="fw-semibold mb-0">Total</h6></th>
+                        <th><h6 class="fw-semibold mb-0">No.</h6></th>
+                        <th><h6 class="fw-semibold mb-0">Tgl</h6></th>
+                        <th><h6 class="fw-semibold mb-0">Nama Barang</h6></th>
+                        <th><h6 class="fw-semibold mb-0">Transaksi</h6></th>
+                        <th class="text-end"><h6 class="fw-semibold mb-0">Unit</h6></th>
+                        <th class="text-end"><h6 class="fw-semibold mb-0">Total</h6></th>
                       </tr>
                     </thead>
                     <tbody>
                       @forelse ($recentTransactions as $transaction)
                         <tr>
-                          <td class="border-bottom-0"><h6 class="fw-semibold mb-0">{{ $transaction['id'] }}</h6></td>
-                          <td class="border-bottom-0">{{ $transaction['date']->format('d/m/Y') }}</td>
-                          <td class="border-bottom-0"><h6 class="fw-semibold mb-0">{{ $transaction['name'] }}</h6><span class="text-muted">{{ $transaction['unit'] }}</span></td>
-                          <td class="border-bottom-0"><span class="badge {{ $transaction['type'] === 'Penjualan' ? 'bg-primary' : 'bg-danger' }} rounded-0 fw-semibold">{{ $transaction['type'] }}</span></td>
-                          <td class="border-bottom-0 text-end">{{ rtrim(rtrim(number_format($transaction['quantity'], 3, ',', '.'), '0'), ',') }}</td>
-                          <td class="border-bottom-0 text-end"><h6 class="fw-semibold mb-0 fs-4">Rp {{ number_format($transaction['amount'], 0, ',', '.') }}</h6></td>
+                          <td>{{ $loop->iteration }}</td>
+                          <td>{{ $transaction['date']->format('d/m/Y') }}</td>
+                          <td>
+                            <span class="fw-semibold">{{ $transaction['name'] }}</span>@if (filled($transaction['unit'])) <span class="text-muted">({{ $transaction['unit'] }})</span>@endif
+                          </td>
+                          <td><span class="badge {{ $transaction['type'] === 'Penjualan' ? 'bg-primary' : 'bg-danger' }} rounded-pill fw-semibold">{{ $transaction['type'] }}</span></td>
+                          <td class="text-end">{{ rtrim(rtrim(number_format($transaction['quantity'], 3, ',', '.'), '0'), ',') }}</td>
+                          <td class="text-end"><h6 class="fw-semibold mb-0 fs-4">Rp {{ number_format($transaction['amount'], 0, ',', '.') }}</h6></td>
                         </tr>
                       @empty
                         <tr><td colspan="6" class="text-center text-muted py-4">Belum ada transaksi.</td></tr>
