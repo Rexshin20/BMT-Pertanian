@@ -132,8 +132,7 @@ class ImporController extends Controller
         $namaBarang = trim($data['nama_barang']);
         $satuan = trim($data['satuan']);
         $pemilik = $this->resolvePemilik((string) $data['pemilik_kode']);
-        $produk = Produk::query()->where('pemilik_id', $pemilik->id)
-            ->whereRaw('LOWER(nama) = ?', [mb_strtolower($namaBarang)])->lockForUpdate()->first();
+        $produk = Produk::findVariant($pemilik->id, $namaBarang, $satuan);
         if (! $produk) {
             $produk = new Produk(['nama' => $namaBarang, 'pemilik_id' => $pemilik->id]);
             if ($satuan !== '') {
@@ -160,8 +159,7 @@ class ImporController extends Controller
         $namaBarang = trim($data['nama_barang']);
         $satuan = trim($data['satuan']);
         $pemilik = $this->resolvePemilik((string) $data['pemilik_kode']);
-        $produk = Produk::query()->where('pemilik_id', $pemilik->id)
-            ->whereRaw('LOWER(nama) = ?', [mb_strtolower($namaBarang)])->lockForUpdate()->first();
+        $produk = Produk::findVariant($pemilik->id, $namaBarang, $satuan);
         if (! $produk) {
             $produk = new Produk(['nama' => $namaBarang, 'pemilik_id' => $pemilik->id]);
             if ($satuan !== '') {
@@ -195,8 +193,7 @@ class ImporController extends Controller
         $satuan = trim($data['satuan']);
         $kode = (string) $data['pemilik_kode'];
         $pemilik = $this->resolvePemilik($kode);
-        $produk = Produk::query()->where('pemilik_id', $pemilik->id)
-            ->whereRaw('LOWER(nama) = ?', [mb_strtolower($namaBarang)])->lockForUpdate()->first();
+        $produk = Produk::findVariant($pemilik->id, $namaBarang, $satuan);
         if (! $produk) {
             $produk = new Produk(['nama' => $namaBarang, 'pemilik_id' => $pemilik->id]);
             if ($satuan !== '') {

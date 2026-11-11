@@ -56,12 +56,12 @@
               </a>
             </li>
             <li class="sidebar-item">
-              <a class="sidebar-link {{ request()->routeIs('penjualan.create') ? 'active' : '' }}" href="{{ route('penjualan.create') }}">
+              <a class="sidebar-link {{ request()->routeIs('penjualan.create.list') ? 'active' : '' }}" href="{{ route('penjualan.create.list') }}">
                 <span><i class="ti ti-shopping-cart-plus"></i></span><span class="hide-menu">Create Penjualan</span>
               </a>
             </li>
             <li class="sidebar-item">
-              <a class="sidebar-link {{ request()->routeIs('pembelian.create') ? 'active' : '' }}" href="{{ route('pembelian.create') }}">
+              <a class="sidebar-link {{ request()->routeIs('pembelian.create.list') ? 'active' : '' }}" href="{{ route('pembelian.create.list') }}">
                 <span><i class="ti ti-receipt"></i></span><span class="hide-menu">Create Pembelian</span>
               </a>
             </li>

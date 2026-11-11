@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -35,6 +36,7 @@ class PembelianController extends Controller
             ->latest('id')
             ->get()
             ->map(fn (Pembelian $p) => (object) [
+                'id' => $p->id,
                 'tanggal' => $p->tanggal,
                 'nama_barang' => trim($p->produk->nama),
                 'satuan' => trim($p->satuan ?: $p->produk->satuan),
@@ -43,22 +45,23 @@ class PembelianController extends Controller
                 'ownerKode' => $p->produk->pemilik->kode ?? '',
             ]);
 
-        // "Semua nama": transaksi yang tanggal, barang, satuan, dan harganya sama
-        // digabung jadi satu baris (jumlah dijumlah) biar tabel tidak boros.
         if (empty($filters['pemilik'])) {
             $pembelians = $pembelians
                 ->groupBy(fn ($p) => $p->tanggal->format('Y-m-d')
-                    .'|'.mb_strtolower($p->nama_barang)
-                    .'|'.mb_strtolower($p->satuan)
+                    .'|'.mb_strtolower(trim($p->nama_barang))
+                    .'|'.Produk::normalizeSatuan($p->satuan)
                     .'|'.sprintf('%.4f', (float) $p->harga))
                 ->map(fn ($group) => $group->count() === 1
                     ? $group->first()
                     : (object) [
+                        'id' => $group->first()->id,
                         'tanggal' => $group->first()->tanggal,
                         'nama_barang' => $group->first()->nama_barang,
                         'satuan' => $group->first()->satuan,
                         'harga' => $group->first()->harga,
-                        'jumlah' => (string) $group->sum('jumlah'),
+                        'jumlah' => FinancialAmount::quantityFromThousandths(
+                            $group->sum(fn ($p) => FinancialAmount::quantityInThousandths((string) $p->jumlah))
+                        ),
                         'ownerKode' => '',
                     ])
                 ->values();
@@ -79,15 +82,162 @@ class PembelianController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function edit(Pembelian $pembelian): View
     {
+        return view('keuangan.transaksi.edit', [
+            'jenisTransaksi' => 'Pembelian',
+            'transaksi' => $pembelian->load('produk.pemilik'),
+            'hargaField' => 'harga_beli',
+            'hargaLabel' => 'Harga beli per unit',
+            'updateRoute' => 'pembelian.update',
+            'backRoute' => 'pembelian.create.list',
+        ]);
+    }
+
+    public function update(Request $request, Pembelian $pembelian): RedirectResponse
+    {
+        $data = $request->validate([
+            'produk_id' => ['required', 'integer', 'exists:produks,id'],
+            'satuan' => ['required', 'string', 'max:30'],
+            'tanggal' => ['required', 'date_format:Y-m-d'],
+            'jumlah' => ['required', 'numeric', 'regex:/^\d{1,6}(?:\.\d{1,3})?$/', 'gt:0'],
+            'harga_beli' => ['required', 'numeric', 'regex:/^\d{1,7}(?:\.\d{1,2})?$/', 'gt:0'],
+        ]);
+
+        DB::transaction(function () use ($data, $pembelian): void {
+            $lockedPembelian = Pembelian::query()->whereKey($pembelian->id)->lockForUpdate()->firstOrFail();
+            $produkIds = collect([$lockedPembelian->produk_id, (int) $data['produk_id']])->unique()->sort()->values();
+            $produks = Produk::query()->whereIn('id', $produkIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            $produkLama = $produks->get($lockedPembelian->produk_id);
+            $produkBaru = $produks->get((int) $data['produk_id']);
+            if (! $produkLama || ! $produkBaru) {
+                throw ValidationException::withMessages([
+                    'produk_id' => 'Barang yang dipilih tidak ditemukan.',
+                ]);
+            }
+            $jumlahLama = FinancialAmount::quantityInThousandths((string) $lockedPembelian->jumlah);
+            $jumlahBaru = FinancialAmount::quantityInThousandths((string) $data['jumlah']);
+
+            if ($lockedPembelian->produk_id === (int) $data['produk_id']) {
+                $stokBaru = FinancialAmount::quantityInThousandths((string) $produkLama->stok) + $jumlahBaru - $jumlahLama;
+                if ($stokBaru < 0) {
+                    throw ValidationException::withMessages([
+                        'jumlah' => 'Jumlah pembelian tidak bisa dikurangi karena stok barang akan menjadi negatif.',
+                    ]);
+                }
+                $produkLama->stok = FinancialAmount::quantityFromThousandths($stokBaru);
+            } else {
+                $stokLama = FinancialAmount::quantityInThousandths((string) $produkLama->stok) - $jumlahLama;
+                if ($stokLama < 0) {
+                    throw ValidationException::withMessages([
+                        'produk_id' => 'Stok barang lama sudah terpakai, jadi transaksi ini tidak bisa dipindahkan.',
+                    ]);
+                }
+                $produkLama->stok = FinancialAmount::quantityFromThousandths($stokLama);
+                $produkBaru->stok = FinancialAmount::quantityFromThousandths(
+                    FinancialAmount::quantityInThousandths((string) $produkBaru->stok) + $jumlahBaru
+                );
+            }
+
+            $lockedPembelian->update([
+                'produk_id' => $produkBaru->id,
+                'tanggal' => $data['tanggal'],
+                'satuan' => trim($data['satuan']),
+                'jumlah' => $data['jumlah'],
+                'harga_beli' => $data['harga_beli'],
+                'total_harga' => FinancialAmount::multiply((string) $data['jumlah'], (string) $data['harga_beli']),
+            ]);
+
+            foreach ($produks as $produk) {
+                $produk->harga_beli = (string) (Pembelian::query()
+                    ->where('produk_id', $produk->id)
+                    ->orderByDesc('id')
+                    ->value('harga_beli') ?? '0');
+                $produk->save();
+            }
+        });
+
+        return redirect()->route('pembelian.create.list')->with('success', 'Transaksi pembelian berhasil diperbarui dan stok disesuaikan.');
+    }
+
+    public function destroy(Pembelian $pembelian): RedirectResponse
+    {
+        DB::transaction(function () use ($pembelian): void {
+            $lockedPembelian = Pembelian::query()->whereKey($pembelian->id)->lockForUpdate()->firstOrFail();
+            $produk = Produk::query()->whereKey($lockedPembelian->produk_id)->lockForUpdate()->first();
+
+            if ($produk) {
+                $stokBaru = FinancialAmount::quantityInThousandths((string) $produk->stok)
+                    - FinancialAmount::quantityInThousandths((string) $lockedPembelian->jumlah);
+
+                if ($stokBaru < 0) {
+                    throw ValidationException::withMessages([
+                        'pembelian' => 'Transaksi tidak bisa dihapus karena stok barang sudah terpakai.',
+                    ]);
+                }
+
+                $produk->stok = FinancialAmount::quantityFromThousandths($stokBaru);
+            }
+
+            $lockedPembelian->delete();
+
+            if ($produk) {
+                $produk->harga_beli = (string) (Pembelian::query()
+                    ->where('produk_id', $produk->id)
+                    ->orderByDesc('id')
+                    ->value('harga_beli') ?? '0');
+                $produk->save();
+            }
+        });
+
+        return redirect()->route('pembelian.history')->with('success', 'Transaksi pembelian berhasil dihapus dan stok disesuaikan.');
+    }
+
+    public function createList(Request $request): View    {
+        $filters = $request->validate([
+            'tanggal_mulai' => ['nullable', 'date_format:Y-m-d'],
+            'tanggal_selesai' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:tanggal_mulai'],
+            'pemilik' => ['nullable', 'string', 'exists:pemiliks,kode'],
+        ]);
         $pemiliks = Pemilik::query()->orderByRaw('CAST(kode AS DECIMAL(20, 0))')->get();
         $lastKode = session('last_pemilik_kode');
+        $query = Pembelian::query()->with('produk.pemilik');
 
-        return view('keuangan.pembelian.create', [
+        if (! empty($filters['tanggal_mulai'])) {
+            $query->whereDate('tanggal', '>=', $filters['tanggal_mulai']);
+        }
+        if (! empty($filters['tanggal_selesai'])) {
+            $query->whereDate('tanggal', '<=', $filters['tanggal_selesai']);
+        }
+        if (! empty($filters['pemilik'])) {
+            $query->whereHas('produk.pemilik', fn ($ownerQuery) => $ownerQuery->where('kode', $filters['pemilik']));
+        }
+
+        return view($request->routeIs('pembelian.history')
+            ? 'keuangan.transaksi.history'
+            : 'keuangan.transaksi.stock-list', [
+            'jenisTransaksi' => 'Pembelian',
             'nomorBerikutnya' => Pembelian::query()->count() + 1,
             'pemiliks' => $pemiliks,
             'lastPemilikKode' => $pemiliks->contains('kode', $lastKode) ? $lastKode : null,
+            'produks' => Produk::query()->with('pemilik')->orderBy('nama')->get(),
+            'transaksiList' => $query->latest('tanggal')->latest('id')->get()->map(fn (Pembelian $p) => (object) [
+                'id' => $p->id,
+                'tanggal' => $p->tanggal,
+                'nama_barang' => trim($p->produk->nama),
+                'satuan' => trim($p->satuan ?: $p->produk->satuan),
+                'harga' => $p->harga_beli,
+                'jumlah' => $p->jumlah,
+                'total' => $p->total_harga,
+                'ownerKode' => $p->produk->pemilik->kode ?? '',
+                'ownerNama' => $p->produk->pemilik->nama ?? 'Belum ditentukan',
+            ]),
+            'pemilikTerpilih' => $filters['pemilik'] ?? '',
+            'tanggalMulai' => $filters['tanggal_mulai'] ?? '',
+            'tanggalSelesai' => $filters['tanggal_selesai'] ?? '',
+            'pemilikTerpilihNama' => ! empty($filters['pemilik'])
+                ? Pemilik::query()->where('kode', $filters['pemilik'])->value('nama')
+                : null,
         ]);
     }
 
@@ -106,7 +256,7 @@ class PembelianController extends Controller
 
         session(['last_pemilik_kode' => $data['pemilik_kode']]);
 
-        return redirect()->route('pembelian.create')->with('success', 'Pembelian dicatat dan stok barang bertambah.');
+        return redirect()->route('pembelian.create.list')->with('success', 'Pembelian dicatat dan stok barang bertambah.');
     }
 
     public function template(): BinaryFileResponse
@@ -177,11 +327,7 @@ class PembelianController extends Controller
             ->where('kode', $data['pemilik_kode'])
             ->lockForUpdate()
             ->firstOrFail();
-        $produk = Produk::query()
-            ->where('pemilik_id', $pemilik->id)
-            ->whereRaw('LOWER(nama) = ?', [mb_strtolower($namaBarang)])
-            ->lockForUpdate()
-            ->first();
+        $produk = Produk::findVariant($pemilik->id, $namaBarang, $satuan);
 
         if (! $produk) {
             $produk = new Produk([

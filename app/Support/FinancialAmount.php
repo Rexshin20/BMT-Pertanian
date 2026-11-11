@@ -11,6 +11,14 @@ class FinancialAmount
         return self::toMinorUnits($quantity, 3);
     }
 
+    public static function quantityFromThousandths(int $quantity): string
+    {
+        $whole = intdiv($quantity, 1000);
+        $fraction = str_pad((string) ($quantity % 1000), 3, '0', STR_PAD_LEFT);
+
+        return $whole.'.'.$fraction;
+    }
+
     public static function multiply(string $quantity, string $unitPrice): string
     {
         $quantityInThousandths = self::quantityInThousandths($quantity);

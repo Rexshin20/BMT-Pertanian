@@ -9,7 +9,7 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
       <div>
         <h5 class="card-title fw-semibold mb-1">Data Pembelian</h5>
-        <span class="text-muted fs-3">Pembelian dikelompokkan per pemilik; pilih nama untuk melihat atau mengekspor datanya saja.</span>
+        <span class="text-muted fs-3">Halaman ini hanya untuk melihat riwayat pembelian.</span>
       </div>
     </div>
     @include('keuangan.partials.date-filter', ['tableId' => 'pembelian-table'])

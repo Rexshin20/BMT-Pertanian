@@ -25,6 +25,80 @@ class BookkeepingTest extends TestCase
         $this->actingAs($this->testUser);
     }
 
+    public function test_create_transaction_pages_show_tables_with_add_buttons(): void
+    {
+        $pemilik = $this->createPemilik('Ani');
+        $produk = Produk::query()->create([
+            'pemilik_id' => $pemilik->id,
+            'nama' => 'Beras',
+            'satuan' => 'kg',
+        ]);
+        $produk->stok = '12.500';
+        $produk->save();
+
+        $this->get(route('penjualan.create.list'))
+            ->assertOk()
+            ->assertSee('Create Penjualan')
+            ->assertSee('Riwayat Penjualan')
+            ->assertSee('href="'.route('penjualan.history').'"', false)
+            ->assertSee('Tambah Penjualan')
+            ->assertDontSee('position-fixed')
+            ->assertDontSee('transaction-history-modal')
+            ->assertSee('action="'.route('penjualan.store').'"', false)
+            ->assertSee('name="harga_jual"', false)
+            ->assertSee('Simpan Penjualan')
+            ->assertDontSee('Memuat formulir')
+            ->assertDontSee('fetch(');
+
+        $this->get(route('pembelian.create.list'))
+            ->assertOk()
+            ->assertSee('Create Pembelian')
+            ->assertSee('Riwayat Pembelian')
+            ->assertSee('href="'.route('pembelian.history').'"', false)
+            ->assertSee('Tambah Pembelian')
+            ->assertDontSee('position-fixed')
+            ->assertDontSee('transaction-history-modal')
+            ->assertSee('action="'.route('pembelian.store').'"', false)
+            ->assertSee('name="harga_beli"', false)
+            ->assertSee('Simpan Pembelian')
+            ->assertDontSee('Memuat formulir')
+            ->assertDontSee('fetch(');
+
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $pemilik->kode,
+            'nama_barang' => 'Beras',
+            'tanggal' => '2026-10-10',
+            'satuan' => 'kg',
+            'jumlah' => '1',
+            'harga_beli' => '100',
+        ])->assertRedirect(route('pembelian.create.list'));
+        $pembelian = Pembelian::query()->firstOrFail();
+
+        $this->post(route('penjualan.store'), [
+            'pemilik_kode' => $pemilik->kode,
+            'produk_id' => $produk->id,
+            'tanggal' => '2026-10-11',
+            'satuan' => 'kg',
+            'jumlah' => '1',
+            'harga_jual' => '150',
+        ])->assertRedirect(route('penjualan.create.list'));
+        $penjualan = Penjualan::query()->firstOrFail();
+
+        $this->get(route('pembelian.history'))
+            ->assertSee('Beras')
+            ->assertSee(route('pembelian.edit', $pembelian));
+        $this->get(route('penjualan.history'))
+            ->assertSee('Beras')
+            ->assertSee(route('penjualan.edit', $penjualan));
+        $this->get(route('penjualan.index'))
+            ->assertDontSee('Tambah Penjualan')
+            ->assertDontSee(route('produk.edit', $produk))
+            ->assertDontSee(route('penjualan.edit', $penjualan));
+        $this->get(route('pembelian.index'))
+            ->assertDontSee('Tambah Pembelian')
+            ->assertDontSee(route('pembelian.edit', $pembelian));
+    }
+
     public function test_products_can_be_created_and_purchases_increase_stock(): void
     {
         $pemilik = $this->createPemilik('Ani');
@@ -36,7 +110,7 @@ class BookkeepingTest extends TestCase
             'satuan' => 'per bungkus',
             'jumlah' => '10',
             'harga_beli' => '8250',
-        ])->assertRedirect(route('pembelian.create'))
+        ])->assertRedirect(route('pembelian.create.list'))
             ->assertSessionHas('success', 'Pembelian dicatat dan stok barang bertambah.');
 
         $produk = Produk::query()->where('nama', 'Kopi')->where('pemilik_id', $pemilik->id)->firstOrFail();
@@ -64,6 +138,140 @@ class BookkeepingTest extends TestCase
             ->assertDontSee('>10,000</td>', false);
     }
 
+    public function test_purchases_with_the_same_name_but_different_units_create_separate_products(): void
+    {
+        $pemilik = $this->createPemilik('Bambang');
+
+        foreach ([['200 ml', '2000'], ['500 ml', '3000']] as [$satuan, $harga]) {
+            $this->post(route('pembelian.store'), [
+                'pemilik_kode' => $pemilik->kode,
+                'nama_barang' => 'Kaka',
+                'tanggal' => '2026-11-11',
+                'satuan' => $satuan,
+                'jumlah' => '2',
+                'harga_beli' => $harga,
+            ])->assertRedirect(route('pembelian.create.list'));
+        }
+
+        $this->assertSame(2, Produk::query()->where('nama', 'Kaka')->count());
+
+        $kecil = Produk::query()->where('nama', 'Kaka')->where('satuan', '200 ml')->firstOrFail();
+        $besar = Produk::query()->where('nama', 'Kaka')->where('satuan', '500 ml')->firstOrFail();
+
+        $this->assertSame('2.000', $kecil->stok);
+        $this->assertSame('2.000', $besar->stok);
+        $this->assertSame('2000.00', $kecil->harga_beli);
+        $this->assertSame('3000.00', $besar->harga_beli);
+
+        $this->get(route('penjualan.create'))
+            ->assertOk()
+            ->assertSee('Kaka — stok 2 200 ml')
+            ->assertSee('Kaka — stok 2 500 ml');
+
+        $this->post(route('penjualan.store'), [
+            'pemilik_kode' => $pemilik->kode,
+            'produk_id' => $besar->id,
+            'tanggal' => '2026-11-11',
+            'satuan' => '500 ml',
+            'jumlah' => '1',
+            'harga_jual' => '4000',
+        ])->assertRedirect(route('penjualan.create.list'));
+
+        $this->assertSame('2.000', $kecil->fresh()->stok);
+        $this->assertSame('1.000', $besar->fresh()->stok);
+    }
+
+    public function test_all_names_sales_view_merges_rows_with_the_same_date_item_unit_and_price(): void
+    {
+        $andi = $this->createPemilik('Andi');
+        $budi = $this->createPemilik('Budi');
+        $kopiAndi = Produk::query()->create(['pemilik_id' => $andi->id, 'nama' => 'Kopi', 'satuan' => 'pcs']);
+        $kopiBudi = Produk::query()->create(['pemilik_id' => $budi->id, 'nama' => 'Kopi', 'satuan' => 'pcs']);
+        $kopiBotol = Produk::query()->create(['pemilik_id' => $andi->id, 'nama' => 'Kopi', 'satuan' => 'botol']);
+
+        $rows = [
+            [$kopiAndi, 'pcs', '2', '10000'],
+            [$kopiBudi, 'pcs', '3', '10000'],
+            [$kopiAndi, 'pcs', '1', '12000'],
+            [$kopiBotol, 'botol', '1', '10000'],
+        ];
+
+        foreach ($rows as [$produk, $satuan, $jumlah, $harga]) {
+            $total = (float) $jumlah * (float) $harga;
+
+            Penjualan::query()->create([
+                'produk_id' => $produk->id,
+                'tanggal' => '2026-11-11',
+                'satuan' => $satuan,
+                'jumlah' => $jumlah,
+                'harga_beli_satuan' => '1000',
+                'harga_jual' => $harga,
+                'total_harga_beli' => (string) ((float) $jumlah * 1000),
+                'total_harga_jual' => (string) $total,
+                'laba' => (string) ($total - (float) $jumlah * 1000),
+            ]);
+        }
+
+        $this->get(route('penjualan.index'))
+            ->assertOk()
+            ->assertSee('Rp 50.000,00')
+            ->assertSee('Rp 12.000,00')
+            ->assertSee('Rp 10.000,00')
+            ->assertDontSee('Rp 20.000,00')
+            ->assertDontSee('Rp 30.000,00')
+            ->assertSee('>5</td>', false);
+
+        $this->get(route('penjualan.index', ['pemilik' => $andi->kode]))
+            ->assertOk()
+            ->assertSee('Rp 20.000,00')
+            ->assertSee('Rp 12.000,00')
+            ->assertSee('Rp 10.000,00')
+            ->assertDontSee('Rp 50.000,00');
+    }
+
+    public function test_all_names_purchases_view_merges_rows_with_the_same_date_item_unit_and_price(): void
+    {
+        $andi = $this->createPemilik('Andi');
+        $budi = $this->createPemilik('Budi');
+        $berasAndi = Produk::query()->create(['pemilik_id' => $andi->id, 'nama' => 'Beras', 'satuan' => 'kg']);
+        $berasBudi = Produk::query()->create(['pemilik_id' => $budi->id, 'nama' => 'Beras', 'satuan' => 'kg']);
+        $berasKarung = Produk::query()->create(['pemilik_id' => $andi->id, 'nama' => 'Beras', 'satuan' => 'karung']);
+
+        $rows = [
+            [$berasAndi, 'kg', '2', '2000'],
+            [$berasBudi, 'kg', '3', '2000'],
+            [$berasAndi, 'kg', '1', '3000'],
+            [$berasKarung, 'karung', '1', '2000'],
+        ];
+
+        foreach ($rows as [$produk, $satuan, $jumlah, $harga]) {
+            Pembelian::query()->create([
+                'produk_id' => $produk->id,
+                'tanggal' => '2026-11-11',
+                'satuan' => $satuan,
+                'jumlah' => $jumlah,
+                'harga_beli' => $harga,
+                'total_harga' => (string) ((float) $jumlah * (float) $harga),
+            ]);
+        }
+
+        $this->get(route('pembelian.index'))
+            ->assertOk()
+            ->assertSee('Rp 10.000,00')
+            ->assertSee('Rp 3.000,00')
+            ->assertSee('Rp 2.000,00')
+            ->assertDontSee('Rp 4.000,00')
+            ->assertDontSee('Rp 6.000,00')
+            ->assertSee('>5</td>', false);
+
+        $this->get(route('pembelian.index', ['pemilik' => $andi->kode]))
+            ->assertOk()
+            ->assertSee('Rp 4.000,00')
+            ->assertSee('Rp 3.000,00')
+            ->assertSee('Rp 2.000,00')
+            ->assertDontSee('Rp 10.000,00');
+    }
+
     public function test_sales_reduce_stock_and_keep_the_purchase_cost_snapshot_for_profit_reports(): void
     {
         $pemilik = $this->createPemilik('Budi');
@@ -80,7 +288,7 @@ class BookkeepingTest extends TestCase
             'satuan' => 'per kotak',
             'jumlah' => '10',
             'harga_beli' => '100',
-        ])->assertRedirect(route('pembelian.create'));
+        ])->assertRedirect(route('pembelian.create.list'));
 
         $this->post(route('penjualan.store'), [
             'pemilik_kode' => $pemilik->kode,
@@ -89,7 +297,7 @@ class BookkeepingTest extends TestCase
             'satuan' => 'per kotak',
             'jumlah' => '2.5',
             'harga_jual' => '150',
-        ])->assertRedirect(route('penjualan.create'))
+        ])->assertRedirect(route('penjualan.create.list'))
             ->assertSessionHas('success', 'Penjualan dicatat dan stok barang berkurang.');
 
         $this->assertSame('7.500', $produk->fresh()->stok);
@@ -101,7 +309,7 @@ class BookkeepingTest extends TestCase
             'satuan' => 'per kotak',
             'jumlah' => '5',
             'harga_beli' => '120',
-        ])->assertRedirect(route('pembelian.create'));
+        ])->assertRedirect(route('pembelian.create.list'));
 
         $this->assertSame('100.00', Penjualan::query()->firstOrFail()->harga_beli_satuan);
 
@@ -144,6 +352,219 @@ class BookkeepingTest extends TestCase
             ->assertSee('Budi');
     }
 
+    public function test_purchase_transactions_can_be_edited_and_adjust_stock(): void
+    {
+        $pemilik = $this->createPemilik('Ani');
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $pemilik->kode,
+            'nama_barang' => 'Beras',
+            'tanggal' => '2026-10-01',
+            'satuan' => 'kg',
+            'jumlah' => '10',
+            'harga_beli' => '100',
+        ])->assertRedirect(route('pembelian.create.list'));
+
+        $produk = Produk::query()->where('pemilik_id', $pemilik->id)->firstOrFail();
+        $this->post(route('penjualan.store'), [
+            'pemilik_kode' => $pemilik->kode,
+            'produk_id' => $produk->id,
+            'tanggal' => '2026-10-02',
+            'satuan' => 'kg',
+            'jumlah' => '3',
+            'harga_jual' => '150',
+        ])->assertRedirect(route('penjualan.create.list'));
+
+        $pembelian = Pembelian::query()->firstOrFail();
+        $this->get(route('pembelian.edit', $pembelian))
+            ->assertOk()
+            ->assertSee('name="produk_id"', false)
+            ->assertSee('name="satuan"', false)
+            ->assertSee('name="tanggal"', false)
+            ->assertSee('name="jumlah"', false)
+            ->assertSee('name="harga_beli"', false);
+
+        $this->put(route('pembelian.update', $pembelian), [
+            'produk_id' => $produk->id,
+            'satuan' => 'kg',
+            'tanggal' => '2026-10-03',
+            'jumlah' => '8',
+            'harga_beli' => '120',
+        ])->assertRedirect(route('pembelian.create.list'))
+            ->assertSessionHas('success', 'Transaksi pembelian berhasil diperbarui dan stok disesuaikan.');
+
+        $this->assertSame('5.000', $produk->fresh()->stok);
+        $this->assertSame('120.00', $produk->fresh()->harga_beli);
+        $this->assertDatabaseHas('pembelians', [
+            'id' => $pembelian->id,
+            'tanggal' => '2026-10-03',
+            'jumlah' => '8.000',
+            'harga_beli' => '120.00',
+            'total_harga' => '960.00',
+        ]);
+        $this->get(route('pembelian.history'))
+            ->assertOk()
+            ->assertSee(route('pembelian.edit', $pembelian));
+
+        $this->put(route('pembelian.update', $pembelian), [
+            'produk_id' => $produk->id,
+            'satuan' => 'kg',
+            'tanggal' => '2026-10-03',
+            'jumlah' => '2',
+            'harga_beli' => '120',
+        ])->assertSessionHasErrors('jumlah');
+
+        $this->assertSame('5.000', $produk->fresh()->stok);
+        $this->assertSame('8.000', $pembelian->fresh()->jumlah);
+    }
+
+    public function test_sale_transactions_can_be_edited_and_recalculate_stock_and_profit(): void
+    {
+        $pemilik = $this->createPemilik('Budi');
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $pemilik->kode,
+            'nama_barang' => 'Gula',
+            'tanggal' => '2026-10-01',
+            'satuan' => 'kg',
+            'jumlah' => '10',
+            'harga_beli' => '100',
+        ])->assertRedirect(route('pembelian.create.list'));
+
+        $produk = Produk::query()->where('pemilik_id', $pemilik->id)->firstOrFail();
+        $this->post(route('penjualan.store'), [
+            'pemilik_kode' => $pemilik->kode,
+            'produk_id' => $produk->id,
+            'tanggal' => '2026-10-02',
+            'satuan' => 'kg',
+            'jumlah' => '3',
+            'harga_jual' => '30000',
+        ])->assertRedirect(route('penjualan.create.list'));
+
+        $penjualan = Penjualan::query()->firstOrFail();
+        $this->get(route('penjualan.edit', $penjualan))
+            ->assertOk()
+            ->assertSee('name="produk_id"', false)
+            ->assertSee('name="satuan"', false)
+            ->assertSee('name="tanggal"', false)
+            ->assertSee('name="jumlah"', false)
+            ->assertSee('name="harga_jual"', false)
+            ->assertSee('value="3" required', false)
+            ->assertSee('value="30.000,00"', false);
+
+        $this->put(route('penjualan.update', $penjualan), [
+            'produk_id' => $produk->id,
+            'satuan' => 'kg',
+            'tanggal' => '2026-10-03',
+            'jumlah' => '4',
+            'harga_jual' => '175',
+        ])->assertRedirect(route('penjualan.create.list'))
+            ->assertSessionHas('success', 'Transaksi penjualan berhasil diperbarui dan stok disesuaikan.');
+
+        $this->assertSame('6.000', $produk->fresh()->stok);
+        $this->assertSame('175.00', $produk->fresh()->harga_jual);
+        $this->assertDatabaseHas('penjuwalans', [
+            'id' => $penjualan->id,
+            'tanggal' => '2026-10-03',
+            'jumlah' => '4.000',
+            'harga_jual' => '175.00',
+            'total_harga_beli' => '400.00',
+            'total_harga_jual' => '700.00',
+            'laba' => '300.00',
+        ]);
+        $this->get(route('penjualan.history'))
+            ->assertOk()
+            ->assertSee(route('penjualan.edit', $penjualan));
+
+        $this->put(route('penjualan.update', $penjualan), [
+            'produk_id' => $produk->id,
+            'satuan' => 'kg',
+            'tanggal' => '2026-10-03',
+            'jumlah' => '11',
+            'harga_jual' => '175',
+        ])->assertSessionHasErrors('jumlah');
+
+        $this->assertSame('6.000', $produk->fresh()->stok);
+        $this->assertSame('4.000', $penjualan->fresh()->jumlah);
+    }
+
+    public function test_editing_transactions_to_another_product_moves_stock_between_products(): void
+    {
+        $ownerA = $this->createPemilik('Pemilik A');
+        $ownerB = $this->createPemilik('Pemilik B');
+
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $ownerA->kode,
+            'nama_barang' => 'Barang A',
+            'tanggal' => '2026-10-01',
+            'satuan' => 'kg',
+            'jumlah' => '5',
+            'harga_beli' => '100',
+        ])->assertRedirect(route('pembelian.create.list'));
+        $purchaseToMove = Pembelian::query()->firstOrFail();
+        $productA = Produk::query()->where('pemilik_id', $ownerA->id)->firstOrFail();
+
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $ownerB->kode,
+            'nama_barang' => 'Barang B',
+            'tanggal' => '2026-10-01',
+            'satuan' => 'box',
+            'jumlah' => '5',
+            'harga_beli' => '200',
+        ])->assertRedirect(route('pembelian.create.list'));
+        $productB = Produk::query()->where('pemilik_id', $ownerB->id)->firstOrFail();
+
+        $this->put(route('pembelian.update', $purchaseToMove), [
+            'produk_id' => $productB->id,
+            'satuan' => 'box',
+            'tanggal' => '2026-10-02',
+            'jumlah' => '2',
+            'harga_beli' => '250',
+        ])->assertRedirect(route('pembelian.create.list'));
+
+        $this->assertSame('0.000', $productA->fresh()->stok);
+        $this->assertSame('7.000', $productB->fresh()->stok);
+        $this->assertSame((int) $productB->id, (int) $purchaseToMove->fresh()->produk_id);
+
+        $this->post(route('penjualan.store'), [
+            'pemilik_kode' => $ownerB->kode,
+            'produk_id' => $productB->id,
+            'tanggal' => '2026-10-03',
+            'satuan' => 'box',
+            'jumlah' => '2',
+            'harga_jual' => '300',
+        ])->assertRedirect(route('penjualan.create.list'));
+        $saleToMove = Penjualan::query()->firstOrFail();
+
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $ownerA->kode,
+            'nama_barang' => 'Barang A',
+            'tanggal' => '2026-10-03',
+            'satuan' => 'kg',
+            'jumlah' => '4',
+            'harga_beli' => '100',
+        ])->assertRedirect(route('pembelian.create.list'));
+
+        $this->put(route('penjualan.update', $saleToMove), [
+            'produk_id' => $productA->id,
+            'satuan' => 'kg',
+            'tanggal' => '2026-10-04',
+            'jumlah' => '3',
+            'harga_jual' => '350',
+        ])->assertRedirect(route('penjualan.create.list'));
+
+        $this->assertSame('1.000', $productA->fresh()->stok);
+        $this->assertSame('7.000', $productB->fresh()->stok);
+        $this->assertDatabaseHas('penjuwalans', [
+            'id' => $saleToMove->id,
+            'produk_id' => $productA->id,
+            'satuan' => 'kg',
+            'jumlah' => '3.000',
+            'harga_beli_satuan' => '100.00',
+            'total_harga_beli' => '300.00',
+            'total_harga_jual' => '1050.00',
+            'laba' => '750.00',
+        ]);
+    }
+
     public function test_profit_is_green_and_loss_is_red_in_the_profit_and_loss_report(): void
     {
         $profitOwner = $this->createPemilik('Pemilik laba');
@@ -157,7 +578,7 @@ class BookkeepingTest extends TestCase
                 'satuan' => 'pcs',
                 'jumlah' => '1',
                 'harga_beli' => $purchasePrice,
-            ])->assertRedirect(route('pembelian.create'));
+            ])->assertRedirect(route('pembelian.create.list'));
 
             $product = Produk::query()->where('pemilik_id', $owner->id)->firstOrFail();
 
@@ -168,7 +589,7 @@ class BookkeepingTest extends TestCase
                 'satuan' => 'pcs',
                 'jumlah' => '1',
                 'harga_jual' => $owner->is($profitOwner) ? '160' : '100',
-            ])->assertRedirect(route('penjualan.create'));
+            ])->assertRedirect(route('penjualan.create.list'));
         }
 
         $this->get(route('laporan.laba-rugi', [
@@ -213,7 +634,7 @@ class BookkeepingTest extends TestCase
             'satuan' => 'per botol',
             'jumlah' => '1',
             'harga_beli' => '10',
-        ])->assertRedirect(route('pembelian.create'));
+        ])->assertRedirect(route('pembelian.create.list'));
 
         $this->from(route('penjualan.create'))
             ->post(route('penjualan.store'), [
@@ -260,7 +681,7 @@ class BookkeepingTest extends TestCase
         $availableProduct->stok = '3';
         $availableProduct->save();
 
-        Produk::query()->create([
+        $emptyProduct = Produk::query()->create([
             'pemilik_id' => $pemilik->id,
             'nama' => 'Kopi habis',
             'satuan' => 'pcs',
@@ -272,9 +693,10 @@ class BookkeepingTest extends TestCase
             ->assertSee('id="pemilik_nama"', false)
             ->assertSee('readonly', false)
             ->assertSee('Kopi tersedia')
+            ->assertDontSee('Kopi habis')
             ->assertSee('data-unit="pcs"', false)
             ->assertSee('data-owner-code="'.$pemilik->kode.'"', false)
-            ->assertDontSee('Kopi habis');
+            ->assertDontSee('value="'.$emptyProduct->id.'" data-owner-code=', false);
     }
 
     public function test_dashboard_shows_live_bookkeeping_data_and_chart_series(): void
@@ -343,7 +765,6 @@ class BookkeepingTest extends TestCase
     public function test_bookkeeping_pages_render_with_the_modernize_layout(): void
     {
         foreach ([
-            'produk.index',
             'pemilik.index',
             'pembelian.index',
             'pembelian.create',
@@ -444,16 +865,14 @@ class BookkeepingTest extends TestCase
 
         $this->get(route('pembelian.create'))
             ->assertSee('Create Pembelian')
-            ->assertSee(route('produk.index'))
-            ->assertSee('Kelola Barang');
+            ->assertDontSee('Kelola Barang');
         $this->get(route('pembelian.create'))
             ->assertSee('id="pemilik_nama"', false)
             ->assertSee('readonly', false);
 
         $this->get(route('penjualan.create'))
             ->assertSee('Create Penjualan')
-            ->assertSee(route('produk.index'))
-            ->assertSee('Kelola Barang')
+            ->assertDontSee('Kelola Barang')
             ->assertSee('id="produk_id"', false)
             ->assertSee('id="pemilik_nama"', false)
             ->assertSee('readonly', false);
@@ -469,7 +888,7 @@ class BookkeepingTest extends TestCase
         $produk->save();
 
         $this->get(route('pembelian.create'))
-            ->assertSee('Form Pembelian')
+            ->assertSee('Tambah Pembelian')
             ->assertSee('ID Pemilik <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('Nama Barang <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('Tgl <span class="text-danger" aria-hidden="true">*</span>', false)
@@ -483,6 +902,7 @@ class BookkeepingTest extends TestCase
             ->assertSee('Harga beli')
             ->assertSee('name="nama_barang"', false)
             ->assertDontSee('<select', false)
+            ->assertDontSee('name="produk_id"', false)
             ->assertSee('name="pemilik_kode"', false)
             ->assertSee('id="nomor" value="1" readonly', false)
             ->assertDontSee('id="nama_barang" name="nama_barang" value="" maxlength="150" readonly', false)
@@ -495,7 +915,7 @@ class BookkeepingTest extends TestCase
             ->assertSee('action="http://localhost/pembelian"', false);
 
         $this->get(route('penjualan.create'))
-            ->assertSee('Form Penjualan')
+            ->assertSee('Tambah Penjualan')
             ->assertSee('ID Pemilik <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('Nama Barang <span class="text-danger" aria-hidden="true">*</span>', false)
             ->assertSee('Tgl <span class="text-danger" aria-hidden="true">*</span>', false)
@@ -645,7 +1065,7 @@ class BookkeepingTest extends TestCase
                 'satuan' => 'kg',
                 'jumlah' => $quantity,
                 'harga_beli' => '10000',
-            ])->assertRedirect(route('pembelian.create'));
+            ])->assertRedirect(route('pembelian.create.list'));
         }
 
         $products = Produk::query()->where('nama', 'Beras')->orderBy('pemilik_id')->get();
@@ -757,24 +1177,15 @@ class BookkeepingTest extends TestCase
             'nama' => 'Nama lama',
             'satuan' => 'pcs',
             'harga_jual' => '150',
-        ])->assertRedirect(route('produk.index'));
+        ])->assertRedirect(route('penjualan.create.list'));
 
         $product = Produk::query()->where('nama', 'Nama lama')->firstOrFail();
         $this->get(route('produk.index'))
+            ->assertRedirect(route('penjualan.create.list'));
+        $this->get(route('penjualan.create.list'))
             ->assertOk()
-            ->assertSee('Master Barang')
-            ->assertSee('id="produk-table"', false)
-            ->assertSee('cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js')
-            ->assertSee("new DataTable('#produk-table'", false)
-            ->assertSee('Tambah Barang')
-            ->assertSee('ti-edit', false)
-            ->assertSee('ti-trash', false)
-            ->assertSee('Stok</th>', false)
-            ->assertDontSee('<th class="text-end">HB Terakhir</th>', false)
-            ->assertDontSee('<th class="text-end">Harga Jual</th>', false)
-            ->assertSee(route('produk.edit', $product))
-            ->assertSee(route('produk.destroy', $product))
-            ->assertSee('Semua transaksi pembelian dan penjualan barang ini juga akan dihapus permanen.');
+            ->assertDontSee(route('produk.edit', $product))
+            ->assertDontSee(route('produk.destroy', $product));
 
         $this->get(route('produk.create'))
             ->assertOk()
@@ -785,7 +1196,7 @@ class BookkeepingTest extends TestCase
             'nama' => 'Nama baru',
             'satuan' => 'kg',
             'harga_jual' => '250',
-        ])->assertRedirect(route('produk.index'))
+        ])->assertRedirect(route('penjualan.create.list'))
             ->assertSessionHas('success', 'Data barang berhasil diperbarui.');
 
         $this->assertDatabaseHas('produks', [
@@ -802,17 +1213,17 @@ class BookkeepingTest extends TestCase
             'satuan' => 'kg',
             'jumlah' => '2',
             'harga_beli' => '100',
-        ])->assertRedirect(route('pembelian.create'));
+        ])->assertRedirect(route('pembelian.create.list'));
 
         $this->delete(route('produk.destroy', $product))
-            ->assertRedirect(route('produk.index'))
+            ->assertRedirect(route('penjualan.create.list'))
             ->assertSessionHas('success', 'Barang dan seluruh transaksi terkait berhasil dihapus.');
 
         $this->assertDatabaseMissing('produks', ['id' => $product->id]);
         $this->assertDatabaseMissing('pembelians', ['produk_id' => $product->id]);
     }
 
-    public function test_product_list_shows_stock_that_updates_automatically_from_transactions(): void
+    public function test_transaction_history_opens_as_a_separate_page_with_edit_actions(): void
     {
         $owner = $this->createPemilik('Pemilik stok otomatis');
         $product = Produk::query()->create([
@@ -831,7 +1242,7 @@ class BookkeepingTest extends TestCase
             'satuan' => 'Botol',
             'jumlah' => '10',
             'harga_beli' => '20000',
-        ])->assertRedirect(route('pembelian.create'));
+        ])->assertRedirect(route('pembelian.create.list'));
 
         $this->post(route('penjualan.store'), [
             'pemilik_kode' => $owner->kode,
@@ -840,21 +1251,131 @@ class BookkeepingTest extends TestCase
             'satuan' => 'Botol',
             'jumlah' => '4',
             'harga_jual' => '25000',
-        ])->assertRedirect(route('penjualan.create'));
+        ])->assertRedirect(route('penjualan.create.list'));
 
         $this->assertSame('6.000', $product->fresh()->stok);
 
-        $this->get(route('produk.index'))
+        $this->get(route('penjualan.history'))
             ->assertOk()
-            ->assertSee('Stok</th>', false)
-            ->assertSee('data-order="6"', false);
+            ->assertSee('Riwayat Penjualan')
+            ->assertSee('NARUTO')
+            ->assertSee('>4</td>', false)
+            ->assertSee(route('penjualan.edit', Penjualan::query()->firstOrFail()))
+            ->assertSee(route('penjualan.create.list'));
 
         $product->forceFill(['stok' => '-2'])->save();
 
-        $this->get(route('produk.index'))
+        $this->get(route('penjualan.create.list'))
             ->assertOk()
-            ->assertSee('data-order="-2"', false)
-            ->assertSee('text-end fw-semibold text-danger', false);
+            ->assertSee('action="'.route('penjualan.store').'"', false)
+            ->assertDontSee('Riwayat Penjualan</h5>');
+    }
+
+    public function test_transaction_history_shows_edit_and_delete_icon_actions(): void
+    {
+        $owner = $this->createPemilik('Pemilik aksi');
+        Produk::query()->create([
+            'pemilik_id' => $owner->id,
+            'nama' => 'Barang aksi',
+            'satuan' => 'pcs',
+        ]);
+
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $owner->kode,
+            'nama_barang' => 'Barang aksi',
+            'tanggal' => '2026-10-02',
+            'satuan' => 'pcs',
+            'jumlah' => '5',
+            'harga_beli' => '1000',
+        ])->assertRedirect(route('pembelian.create.list'));
+
+        $pembelian = Pembelian::query()->firstOrFail();
+
+        $this->get(route('pembelian.history'))
+            ->assertOk()
+            ->assertSee('action="'.route('pembelian.destroy', $pembelian).'"', false)
+            ->assertSee('href="'.route('pembelian.edit', $pembelian).'"', false)
+            ->assertSee('ti ti-edit', false)
+            ->assertSee('ti ti-trash', false);
+    }
+
+    public function test_deleting_transactions_removes_the_row_and_adjusts_stock(): void
+    {
+        $owner = $this->createPemilik('Pemilik hapus');
+        $product = Produk::query()->create([
+            'pemilik_id' => $owner->id,
+            'nama' => 'Barang hapus',
+            'satuan' => 'pcs',
+        ]);
+
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $owner->kode,
+            'nama_barang' => 'Barang hapus',
+            'tanggal' => '2026-10-02',
+            'satuan' => 'pcs',
+            'jumlah' => '5',
+            'harga_beli' => '1000',
+        ]);
+
+        $pembelian = Pembelian::query()->firstOrFail();
+
+        $this->post(route('penjualan.store'), [
+            'pemilik_kode' => $owner->kode,
+            'produk_id' => $product->id,
+            'tanggal' => '2026-10-03',
+            'satuan' => 'pcs',
+            'jumlah' => '2',
+            'harga_jual' => '1500',
+        ]);
+
+        $penjualan = Penjualan::query()->firstOrFail();
+        $this->assertSame('3.000', $product->fresh()->stok);
+
+        $this->delete(route('penjualan.destroy', $penjualan))
+            ->assertRedirect(route('penjualan.history'));
+        $this->assertSame('5.000', $product->fresh()->stok);
+        $this->assertDatabaseMissing('penjuwalans', ['id' => $penjualan->id]);
+
+        $this->delete(route('pembelian.destroy', $pembelian))
+            ->assertRedirect(route('pembelian.history'));
+        $this->assertSame('0.000', $product->fresh()->stok);
+        $this->assertDatabaseMissing('pembelians', ['id' => $pembelian->id]);
+    }
+
+    public function test_purchase_cannot_be_deleted_when_its_stock_was_already_sold(): void
+    {
+        $owner = $this->createPemilik('Pemilik stok terpakai');
+        $product = Produk::query()->create([
+            'pemilik_id' => $owner->id,
+            'nama' => 'Barang terpakai',
+            'satuan' => 'pcs',
+        ]);
+
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $owner->kode,
+            'nama_barang' => 'Barang terpakai',
+            'tanggal' => '2026-10-02',
+            'satuan' => 'pcs',
+            'jumlah' => '5',
+            'harga_beli' => '1000',
+        ]);
+
+        $pembelian = Pembelian::query()->firstOrFail();
+
+        $this->post(route('penjualan.store'), [
+            'pemilik_kode' => $owner->kode,
+            'produk_id' => $product->id,
+            'tanggal' => '2026-10-03',
+            'satuan' => 'pcs',
+            'jumlah' => '2',
+            'harga_jual' => '1500',
+        ]);
+
+        $this->delete(route('pembelian.destroy', $pembelian))
+            ->assertSessionHasErrors('pembelian');
+
+        $this->assertSame('3.000', $product->fresh()->stok);
+        $this->assertDatabaseHas('pembelians', ['id' => $pembelian->id]);
     }
 
     public function test_owner_master_supports_editing_and_deleting_linked_records(): void
@@ -930,7 +1451,7 @@ class BookkeepingTest extends TestCase
             'satuan' => 'per kg',
             'jumlah' => '5',
             'harga_beli' => '15000',
-        ])->assertRedirect(route('pembelian.create'));
+        ])->assertRedirect(route('pembelian.create.list'));
 
         $this->get(route('pembelian.create'))
             ->assertSee('name="pemilik_kode" value="'.$kode.'"', false);
@@ -942,7 +1463,7 @@ class BookkeepingTest extends TestCase
             'pemilik_kode' => $kode,
             'nama' => 'Teh Pucuk',
             'satuan' => 'botol',
-        ])->assertRedirect(route('produk.index'));
+        ])->assertRedirect(route('penjualan.create.list'));
 
         $this->get(route('produk.create'))
             ->assertSee('value="'.$kode.'" selected', false);

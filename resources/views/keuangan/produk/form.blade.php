@@ -12,7 +12,7 @@
       <div class="card-body">
         <div class="d-flex align-items-center justify-content-between mb-4">
           <h5 class="card-title fw-semibold mb-0">{{ $mengedit ? 'Edit Data Barang' : 'Tambah Barang' }}</h5>
-          <a class="btn btn-outline-secondary btn-sm" href="{{ route('produk.index') }}">Kembali ke Master Barang</a>
+          <a class="btn btn-outline-secondary btn-sm" href="{{ route('penjualan.create.list') }}">Kembali ke Stok Barang</a>
         </div>
         <form method="POST" action="{{ $mengedit ? route('produk.update', $produk) : route('produk.store') }}">
           @csrf

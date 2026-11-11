@@ -9,7 +9,7 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
       <div>
         <h5 class="card-title fw-semibold mb-1">Data Penjualan</h5>
-        <span class="text-muted fs-3">Penjualan dikelompokkan per pemilik; pilih nama untuk melihat atau mengekspor datanya saja.</span>
+        <span class="text-muted fs-3">Halaman ini hanya untuk melihat riwayat penjualan.</span>
       </div>
       <div class="d-flex gap-2">
         <a href="{{ route('laporan.laba-rugi') }}" class="btn btn-outline-primary">Laporan Laba Rugi</a>

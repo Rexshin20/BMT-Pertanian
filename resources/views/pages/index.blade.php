@@ -81,13 +81,13 @@
               </a>
             </li>
             <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('penjualan.create') }}">
+              <a class="sidebar-link" href="{{ route('penjualan.create.list') }}">
                 <span><i class="ti ti-shopping-cart-plus"></i></span>
                 <span class="hide-menu">Create Penjualan</span>
               </a>
             </li>
             <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('pembelian.create') }}">
+              <a class="sidebar-link" href="{{ route('pembelian.create.list') }}">
                 <span><i class="ti ti-receipt"></i></span>
                 <span class="hide-menu">Create Pembelian</span>
               </a>

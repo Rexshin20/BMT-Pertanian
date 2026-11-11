@@ -9,16 +9,14 @@ use App\Models\Produk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ProdukController extends Controller
 {
-    public function index(): View
+    public function index(): RedirectResponse
     {
-        return view('keuangan.produk.index', [
-            'produks' => Produk::query()->with('pemilik')->orderBy('nama')->get(),
-        ]);
+        return redirect()->route('penjualan.create.list');
     }
 
     public function create(): View
@@ -51,20 +49,18 @@ class ProdukController extends Controller
         ]);
 
         $pemilik = Pemilik::query()->where('kode', $data['pemilik_kode'])->firstOrFail();
-        $request->validate([
-            'nama' => [Rule::unique('produks', 'nama')->where(fn ($query) => $query->where('pemilik_id', $pemilik->id))],
-        ]);
+        $this->ensureUniqueVariant($pemilik->id, $data['nama'], $data['satuan']);
 
         session(['last_pemilik_kode' => $data['pemilik_kode']]);
 
         Produk::query()->create([
             'pemilik_id' => $pemilik->id,
-            'nama' => $data['nama'],
-            'satuan' => $data['satuan'],
+            'nama' => trim($data['nama']),
+            'satuan' => trim($data['satuan']),
             'harga_jual' => $data['harga_jual'] ?? '0',
         ]);
 
-        return redirect()->route('produk.index')
+        return redirect()->route('penjualan.create.list')
             ->with('success', 'Barang berhasil ditambahkan. Catat pembelian untuk menambah stok.');
     }
 
@@ -78,13 +74,7 @@ class ProdukController extends Controller
         ]);
 
         $pemilik = Pemilik::query()->where('kode', $data['pemilik_kode'])->firstOrFail();
-        $request->validate([
-            'nama' => [
-                Rule::unique('produks', 'nama')
-                    ->where(fn ($query) => $query->where('pemilik_id', $pemilik->id))
-                    ->ignore($produk->id),
-            ],
-        ]);
+        $this->ensureUniqueVariant($pemilik->id, $data['nama'], $data['satuan'], $produk->id);
 
         session(['last_pemilik_kode' => $data['pemilik_kode']]);
 
@@ -95,7 +85,7 @@ class ProdukController extends Controller
             'harga_jual' => $data['harga_jual'] ?? '0',
         ]);
 
-        return redirect()->route('produk.index')->with('success', 'Data barang berhasil diperbarui.');
+        return redirect()->route('penjualan.create.list')->with('success', 'Data barang berhasil diperbarui.');
     }
 
     public function destroy(Produk $produk): RedirectResponse
@@ -106,7 +96,25 @@ class ProdukController extends Controller
             $produk->delete();
         });
 
-        return redirect()->route('produk.index')
+        return redirect()->route('penjualan.create.list')
             ->with('success', 'Barang dan seluruh transaksi terkait berhasil dihapus.');
+    }
+
+    private function ensureUniqueVariant(int $pemilikId, string $nama, string $satuan, ?int $ignoreId = null): void
+    {
+        $exists = Produk::query()
+            ->where('pemilik_id', $pemilikId)
+            ->whereRaw('LOWER(nama) = ?', [mb_strtolower(trim($nama))])
+            ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->get()
+            ->contains(
+                fn (Produk $produk) => Produk::normalizeSatuan($produk->satuan) === Produk::normalizeSatuan($satuan)
+            );
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'nama' => 'Barang dengan nama dan satuan yang sama sudah ada untuk pemilik ini.',
+            ]);
+        }
     }
 }
