@@ -34,6 +34,10 @@
     box-shadow: 0 0.5rem 1rem rgba(15, 23, 42, 0.08);
   }
 
+  .select2-container--bootstrap-5 .select2-dropdown .select2-results__options:not(.select2-results__options--nested) {
+    max-height: 180px;
+  }
+
   .select2-container--bootstrap-5 .select2-search--dropdown {
     padding: 0.5rem 0.75rem 0;
   }
