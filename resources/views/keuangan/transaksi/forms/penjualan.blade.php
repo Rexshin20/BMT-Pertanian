@@ -1,6 +1,6 @@
 @push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+<link rel="stylesheet" href="{{ asset('assets/libs/select2/select2.min.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/libs/select2/select2-bootstrap-5-theme.min.css') }}">
 <style>
   .select2-container--bootstrap-5 .select2-selection {
     min-height: calc(1.5em + 0.75rem + 2px);
@@ -10,6 +10,7 @@
 
   .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
     padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+    font-size: 0.875rem;
     line-height: 1.5;
     color: #2a3547;
   }
@@ -29,6 +30,7 @@
   .select2-container--bootstrap-5 .select2-dropdown {
     border-color: #dfe3e8;
     border-radius: 0.375rem;
+    font-size: 0.875rem;
     box-shadow: 0 0.5rem 1rem rgba(15, 23, 42, 0.08);
   }
 
@@ -137,7 +139,7 @@
 </form>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{{ asset('assets/libs/select2/select2.min.js') }}"></script>
 <script>
   (() => {
     const ownerInput = document.getElementById('pemilik_kode');
