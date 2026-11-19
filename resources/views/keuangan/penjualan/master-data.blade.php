@@ -26,17 +26,23 @@
             <th class="text-center" style="width: 90px;">Unit</th>
             <th class="text-center" style="width: 130px;">Harga</th>
             <th class="text-center" style="width: 140px;">Total</th>
+            <th class="d-none">Berat Bersih</th>
+            <th class="d-none">Harga Beli</th>
+            <th class="d-none">Harga Jual</th>
           </tr>
         </thead>
         <tbody>
           @foreach ($penjualans as $penjualan)
-            <tr data-date="{{ $penjualan->tanggal->format('Y-m-d') }}" data-owner-code="{{ $penjualan->ownerKode ?? '' }}">
+            <tr data-date="{{ $penjualan->tanggal->format('Y-m-d') }}" data-owner-code="{{ $penjualan->ownerKode ?? '' }}" data-nama="{{ $penjualan->nama_barang }}" data-satuan="{{ $penjualan->satuan }}" data-harga-jual="{{ $penjualan->harga }}" data-harga-beli="{{ $penjualan->harga_beli }}">
               <td class="text-center">{{ $loop->iteration }}</td>
               <td class="text-center" data-order="{{ $penjualan->tanggal->format('Y-m-d') }}">{{ $penjualan->tanggal->format('d/m/Y') }}</td>
-              <td class="fw-semibold">{{ $penjualan->nama_barang }}@if (filled($penjualan->satuan)) <span class="text-muted fw-normal">({{ $penjualan->satuan }})</span>@endif</td>
+              <td class="fw-semibold" data-nama="{{ $penjualan->nama_barang }}">{{ $penjualan->nama_barang }}@if (filled($penjualan->satuan)) <span class="text-muted fw-normal">({{ $penjualan->satuan }})</span>@endif</td>
               <td class="text-center" data-order="{{ $penjualan->jumlah }}">{{ rtrim(rtrim(number_format((float) $penjualan->jumlah, 3, ',', '.'), '0'), ',') }}</td>
               <td class="text-center" data-order="{{ $penjualan->harga }}">Rp {{ number_format((float) $penjualan->harga, 2, ',', '.') }}</td>
               <td class="text-center fw-semibold" data-order="{{ (float) $penjualan->harga * (float) $penjualan->jumlah }}">Rp {{ number_format((float) $penjualan->harga * (float) $penjualan->jumlah, 2, ',', '.') }}</td>
+              <td class="d-none">{{ $penjualan->satuan }}</td>
+              <td class="d-none">Rp {{ number_format((float) $penjualan->harga_beli, 2, ',', '.') }}</td>
+              <td class="d-none">Rp {{ number_format((float) $penjualan->harga, 2, ',', '.') }}</td>
             </tr>
           @endforeach
         </tbody>
@@ -52,9 +58,11 @@
     'prefixFile' => 'Penjualan',
     'kolomHuruf' => ['A', 'B', 'C', 'D', 'E', 'F'],
     'tipeKolom' => ['A' => 'num', 'B' => 'text', 'C' => 'text', 'D' => 'num', 'E' => 'num', 'F' => 'num'],
-    'lebarExcel' => [6, 12, 36, 10, 18, 16],
-    'lebarPdf' => ['6%', '12%', '36%', '10%', '18%', '18%'],
-    'rataKiri' => [2],
+    'lebarExcel' => [6, 36, 12, 10, 18, 18],
+    'pdfKolomKhusus' => ['No.', 'Nama Barang', 'Berat Bersih', 'Unit', 'Harga Beli', 'Harga Jual'],
+    'excelKolomKhusus' => [0, 2, 6, 3, 7, 8],
+    'lebarPdf' => ['6%', '30%', '14%', '8%', '21%', '21%'],
+    'rataKiri' => [1],
 ])
 
 @include('keuangan.partials.data-table', [

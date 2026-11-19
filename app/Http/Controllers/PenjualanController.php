@@ -37,6 +37,9 @@ class PenjualanController extends Controller
                 'nama_barang' => trim($p->produk->nama),
                 'satuan' => trim($p->satuan ?: $p->produk->satuan),
                 'harga' => $p->harga_jual,
+                'harga_beli' => $p->harga_beli_satuan !== null
+                    ? (float) $p->harga_beli_satuan
+                    : (float) ($p->produk->harga_beli ?? 0),
                 'jumlah' => $p->jumlah,
                 'ownerKode' => $p->produk->pemilik->kode ?? '',
             ]);
@@ -55,6 +58,7 @@ class PenjualanController extends Controller
                         'nama_barang' => $group->first()->nama_barang,
                         'satuan' => $group->first()->satuan,
                         'harga' => $group->first()->harga,
+                        'harga_beli' => $group->first()->harga_beli,
                         'jumlah' => FinancialAmount::quantityFromThousandths(
                             $group->sum(fn ($p) => FinancialAmount::quantityInThousandths((string) $p->jumlah))
                         ),

@@ -294,14 +294,11 @@
         sheetData.insertBefore(mkRow(sheet, 9, [inlineCell(sheet, 'B9', 'Alamat         : {{ $alamatTampil }}')]), anchor);
         sheetData.insertBefore(mkRow(sheet, 10, [inlineCell(sheet, 'B10', 'Hari, Tanggal  : {{ $tanggalFormatted }}')]), anchor);
 
-        // --- 4. Tanda tangan: Mengetahui/Ketua Pengurus/SUDIONO di bawah garis titik-titik (seperti PDF) ---
+        // --- 4. Tanda tangan: cukup Pengirim & Penerima ---
         const sigStart = numRows + 13;
         [
           { r: sigStart,      cells: [{ c: 'A', c2: 'B', t: 'Pengirim' }, { c: 'F', c2: 'G', t: 'Penerima' }] },
-          { r: sigStart + 3,  cells: [{ c: 'A', c2: 'B', t: '( .................... )' }, { c: 'F', c2: 'G', t: '( .................... )' }] },
-          { r: sigStart + 5,  cells: [{ c: 'C', c2: 'E', t: 'Mengetahui' }] },
-          { r: sigStart + 6,  cells: [{ c: 'C', c2: 'E', t: 'Ketua Pengurus' }] },
-          { r: sigStart + 10, cells: [{ c: 'C', c2: 'E', t: 'SUDIONO' }] }
+          { r: sigStart + 3,  cells: [{ c: 'A', c2: 'B', t: '( .................... )' }, { c: 'F', c2: 'G', t: '( .................... )' }] }
         ].forEach(function (item) {
           const cells = item.cells.map(function (x) {
             merges.push(x.c + item.r + ':' + x.c2 + item.r);
@@ -558,13 +555,12 @@
           paddingBottom: function () { return 4; }
         };
 
-        // === TANDA TANGAN ===
-        // Mengetahui (tengah) lebih ke bawah dari Pengirim & Penerima
+        // === TANDA TANGAN: cukup Pengirim & Penerima ===
         const signatureBlock = {
           margin: [0, 28, 0, 0],
           columns: [
             {
-              width: '33%',
+              width: '50%',
               stack: [
                 { text: 'Pengirim', bold: true, alignment: 'center' },
                 { text: '', margin: [0, 48, 0, 0] },
@@ -572,19 +568,7 @@
               ]
             },
             {
-              width: '34%',
-              stack: [
-                // Spacer berupa baris nyata (bukan margin) supaya blok tengah tetap
-                // turun walau tanda tangan dimulai di halaman baru.
-                { text: '\u00A0\n\u00A0\n\u00A0\n\u00A0\n\u00A0\n\u00A0\n\u00A0', fontSize: 8 },
-                { text: 'Mengetahui', bold: true, alignment: 'center' },
-                { text: 'Ketua Pengurus', bold: true, alignment: 'center', margin: [0, 0, 0, 0] },
-                { text: '', margin: [0, 44, 0, 0] },
-                { text: 'SUDIONO', bold: true, decoration: 'underline', alignment: 'center' }
-              ]
-            },
-            {
-              width: '33%',
+              width: '50%',
               stack: [
                 { text: 'Penerima', bold: true, alignment: 'center' },
                 { text: '', margin: [0, 48, 0, 0] },

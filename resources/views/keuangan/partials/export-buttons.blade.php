@@ -9,6 +9,8 @@
   $lebarPdf = $lebarPdf ?? array_fill(0, count($kolomHuruf), (100 / count($kolomHuruf)).'%');
   $rataKiri = $rataKiri ?? [];
   $rataKanan = $rataKanan ?? [];
+  $pdfKolomKhusus = $pdfKolomKhusus ?? null;
+  $excelKolomKhusus = $excelKolomKhusus ?? null;
   $namaPemilik = $pemilikTerpilihNama ?? null;
   $alamat = trim((string) ($alamat ?? ($pemilikTerpilihObj->alamat ?? '')));
   $alamatTampil = $alamat !== '' ? $alamat : '-';
@@ -103,8 +105,16 @@
       createEmptyCells: true,
       filename: '{{ $prefixFile }}-{{ str_replace([" ", "/", "\\\\"], "-", $namaPemilik ?? "Semua") }}-{{ $tanggalMulai ?: "awal" }}-sd-{{ $tanggalSelesai ?: "akhir" }}',
       exportOptions: {
-        columns: @json($kolomExport),
-        modifier: { search: 'applied' }
+        columns: @json($excelKolomKhusus ?? $kolomExport),
+        modifier: { search: 'applied' }@if ($excelKolomKhusus),
+        format: {
+          body: function (data, row, column, node) {
+            if (node && node.getAttribute && node.getAttribute('data-nama') !== null) {
+              return node.getAttribute('data-nama');
+            }
+            return data;
+          }
+        }@endif
       },
       customize: function (xlsx) {
         const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
@@ -448,7 +458,37 @@
           ]
         };
 
-        const tableBody = doc.content[0].table.body;
+        let tableBody = doc.content[0].table.body;
+        const pdfKolomKhusus = @json($pdfKolomKhusus);
+
+        if (pdfKolomKhusus) {
+          const dtTable = window.jQuery ? window.jQuery('#' + @json($tableId)).DataTable() : null;
+          const dtRows = dtTable ? dtTable.rows({ search: 'applied', order: 'applied' }).nodes().toArray() : [];
+          const fmtRupiah = function (value) {
+            const amount = Number(value);
+            if (value === '' || value === null || value === undefined || !isFinite(amount)) { return '-'; }
+            return 'Rp ' + new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+          };
+
+          pdfKolomKhusus.forEach(function (judul, idx) {
+            if (tableBody[0][idx]) { tableBody[0][idx].text = judul; }
+          });
+
+          tableBody = [tableBody[0]].concat(dtRows.map(function (tr) {
+            const cells = tr.cells;
+
+            return [
+              { text: cells[0] ? cells[0].textContent.trim() : '' },
+              { text: (tr.dataset.nama || (cells[2] ? cells[2].textContent : '')).trim() },
+              { text: (tr.dataset.satuan || '').trim() || '-' },
+              { text: cells[3] ? cells[3].textContent.trim() : '' },
+              { text: fmtRupiah(tr.dataset.hargaBeli) },
+              { text: fmtRupiah(tr.dataset.hargaJual) }
+            ];
+          }));
+          doc.content[0].table.body = tableBody;
+        }
+
         doc.content = [kopBlock, doc.content[0]];
 
         doc.content[1].table.widths = @json($lebarPdf);
