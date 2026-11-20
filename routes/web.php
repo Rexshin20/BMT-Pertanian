@@ -59,4 +59,5 @@ Route::middleware('auth')->group(function () {
     Route::delete('/penjualan/{penjualan}', [PenjualanController::class, 'destroy'])->name('penjualan.destroy');
     Route::get('/laporan/laba-rugi', [LaporanLabaRugiController::class, 'index'])->name('laporan.laba-rugi');
     Route::get('/laporan/stok-akhir', [LaporanStokAkhirController::class, 'index'])->name('laporan.stok-akhir');
+    Route::put('/laporan/stok-akhir/{produk}/koreksi-stok', [LaporanStokAkhirController::class, 'koreksiStok'])->name('laporan.stok-akhir.koreksi');
 });

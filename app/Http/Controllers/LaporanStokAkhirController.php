@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Pemilik;
 use App\Models\Penjualan;
 use App\Models\Produk;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -111,6 +112,20 @@ class LaporanStokAkhirController extends Controller
             'pemilikTerpilihObj' => $pemilikTerpilihObj,
             'alamat' => $alamat,
         ]);
+    }
+
+    public function koreksiStok(Request $request, Produk $produk): RedirectResponse
+    {
+        $validated = $request->validate([
+            'stok' => ['required', 'numeric', 'min:0', 'regex:/^\d{1,9}(?:\.\d{1,3})?$/'],
+        ]);
+
+        $produk->stok = $validated['stok'];
+        $produk->save();
+
+        $stokTampil = rtrim(rtrim(number_format((float) $produk->stok, 3, ',', '.'), '0'), ',');
+
+        return back()->with('success', 'Stok '.$produk->nama.' dikoreksi menjadi '.$stokTampil.'.');
     }
 
     /**

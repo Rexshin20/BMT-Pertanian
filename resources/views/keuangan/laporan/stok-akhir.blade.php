@@ -75,6 +75,9 @@
             <th class="text-end" style="width: 130px;">Barang Terjual</th>
             <th class="text-end" style="width: 130px;">Stok Akhir</th>
             <th style="min-width: 140px;">Keterangan</th>
+            @if ($pemilikTerpilih)
+              <th class="text-center" style="width: 90px;">Aksi</th>
+            @endif
           </tr>
         </thead>
         <tbody>
@@ -87,6 +90,16 @@
               <td class="text-end" data-order="{{ $laporan->penjualan }}">{{ rtrim(rtrim(number_format((float) $laporan->penjualan, 3, ',', '.'), '0'), ',') }}</td>
               <td class="text-end fw-semibold {{ (float) $laporan->stok_akhir < 0 ? 'text-danger' : '' }}" data-order="{{ $laporan->stok_akhir }}">{{ rtrim(rtrim(number_format((float) $laporan->stok_akhir, 3, ',', '.'), '0'), ',') }}</td>
               <td></td>
+              @if ($pemilikTerpilih)
+                <td class="text-center">
+                  @if (isset($laporan->produk))
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-koreksi-stok"
+                      data-action="{{ route('laporan.stok-akhir.koreksi', $laporan->produk->id) }}"
+                      data-nama="{{ $laporan->nama_barang }}{{ $laporan->berat_bersih ? ' '.$laporan->berat_bersih : '' }}"
+                      data-stok="{{ (float) $laporan->produk->stok }}">Koreksi</button>
+                  @endif
+                </td>
+              @endif
             </tr>
           @endforeach
         </tbody>
@@ -94,6 +107,33 @@
     </div>
   </div>
 </div>
+
+@if ($pemilikTerpilih)
+<div class="modal fade" id="modal-koreksi-stok" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="POST" id="form-koreksi-stok" action="#">
+      @csrf
+      @method('PUT')
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title">Koreksi Stok</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+        </div>
+        <div class="modal-body">
+          <div class="fw-semibold mb-2" id="koreksi-nama-stok"></div>
+          <label class="form-label" for="koreksi-stok-input">Stok fisik sekarang</label>
+          <input type="number" step="0.001" min="0" class="form-control" id="koreksi-stok-input" name="stok" required>
+          <div class="form-text">Pakai titik untuk desimal (contoh: 4 atau 4.5).</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Koreksi</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+@endif
 @endsection
 
 @push('scripts')
@@ -583,11 +623,24 @@
     }
   ];
 </script>
+<script>
+  document.querySelectorAll('.btn-koreksi-stok').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const form = document.getElementById('form-koreksi-stok');
+      if (!form) { return; }
+      form.action = btn.dataset.action;
+      document.getElementById('koreksi-nama-stok').textContent = btn.dataset.nama;
+      document.getElementById('koreksi-stok-input').value = btn.dataset.stok;
+      new bootstrap.Modal(document.getElementById('modal-koreksi-stok')).show();
+    });
+  });
+</script>
 @endpush
 
 @include('keuangan.partials.data-table', [
     'tableId' => 'stok-akhir-table',
     'title' => $pemilikTerpilihNama ? 'Laporan Stok Akhir - '.$pemilikTerpilihNama : 'Laporan Stok Akhir',
     'emptyMessage' => 'Tidak ada data stok pada periode ini.',
+    'nonOrderableColumns' => $pemilikTerpilih ? [0, 7] : [0],
 ])
 
