@@ -195,15 +195,30 @@ class PembelianController extends Controller
         return redirect()->route('pembelian.history')->with('success', 'Transaksi pembelian berhasil dihapus dan stok disesuaikan.');
     }
 
-    public function createList(Request $request): View    {
+    public function create(): View
+    {
+        $pemiliks = Pemilik::query()->orderByRaw('CAST(kode AS DECIMAL(20, 0))')->get();
+        $lastKode = session('last_pemilik_kode');
+
+        return view('keuangan.transaksi.stock-list', [
+            'jenisTransaksi' => 'Pembelian',
+            'nomorBerikutnya' => Pembelian::query()->count() + 1,
+            'pemiliks' => $pemiliks,
+            'lastPemilikKode' => $pemiliks->contains('kode', $lastKode) ? $lastKode : null,
+        ]);
+    }
+
+    public function history(Request $request): View
+    {
         $filters = $request->validate([
             'tanggal_mulai' => ['nullable', 'date_format:Y-m-d'],
             'tanggal_selesai' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:tanggal_mulai'],
             'pemilik' => ['nullable', 'string', 'exists:pemiliks,kode'],
         ]);
-        $pemiliks = Pemilik::query()->orderByRaw('CAST(kode AS DECIMAL(20, 0))')->get();
-        $lastKode = session('last_pemilik_kode');
-        $query = Pembelian::query()->with('produk.pemilik');
+        $query = Pembelian::query()->with([
+            'produk:id,nama,satuan,pemilik_id',
+            'produk.pemilik:id,kode,nama',
+        ]);
 
         if (! empty($filters['tanggal_mulai'])) {
             $query->whereDate('tanggal', '>=', $filters['tanggal_mulai']);
@@ -215,14 +230,9 @@ class PembelianController extends Controller
             $query->whereHas('produk.pemilik', fn ($ownerQuery) => $ownerQuery->where('kode', $filters['pemilik']));
         }
 
-        return view($request->routeIs('pembelian.history')
-            ? 'keuangan.transaksi.history'
-            : 'keuangan.transaksi.stock-list', [
+        return view('keuangan.transaksi.history', [
             'jenisTransaksi' => 'Pembelian',
-            'nomorBerikutnya' => Pembelian::query()->count() + 1,
-            'pemiliks' => $pemiliks,
-            'lastPemilikKode' => $pemiliks->contains('kode', $lastKode) ? $lastKode : null,
-            'produks' => Produk::query()->with('pemilik')->orderBy('nama')->get(),
+            'pemiliks' => Pemilik::query()->orderByRaw('CAST(kode AS DECIMAL(20, 0))')->get(),
             'transaksiList' => $query->latest('tanggal')->latest('id')->get()->map(fn (Pembelian $p) => (object) [
                 'id' => $p->id,
                 'tanggal' => $p->tanggal,
@@ -237,9 +247,6 @@ class PembelianController extends Controller
             'pemilikTerpilih' => $filters['pemilik'] ?? '',
             'tanggalMulai' => $filters['tanggal_mulai'] ?? '',
             'tanggalSelesai' => $filters['tanggal_selesai'] ?? '',
-            'pemilikTerpilihNama' => ! empty($filters['pemilik'])
-                ? Pemilik::query()->where('kode', $filters['pemilik'])->value('nama')
-                : null,
         ]);
     }
 

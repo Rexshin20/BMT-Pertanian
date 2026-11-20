@@ -197,16 +197,36 @@ class PenjualanController extends Controller
         return redirect()->route('penjualan.history')->with('success', 'Transaksi penjualan berhasil dihapus dan stok disesuaikan.');
     }
 
-    public function createList(Request $request): View
+    public function create(): View
+    {
+        $pemiliks = Pemilik::query()->orderByRaw('CAST(kode AS DECIMAL(20, 0))')->get();
+        $lastKode = session('last_pemilik_kode');
+
+        return view('keuangan.transaksi.stock-list', [
+            'jenisTransaksi' => 'Penjualan',
+            'nomorBerikutnya' => Penjualan::query()->count() + 1,
+            'pemiliks' => $pemiliks,
+            'lastPemilikKode' => $pemiliks->contains('kode', $lastKode) ? $lastKode : null,
+            'produksTersedia' => Produk::query()
+                ->where('stok', '>', 0)
+                ->with('pemilik:id,kode,nama')
+                ->orderBy('nama')
+                ->orderBy('satuan')
+                ->get(['id', 'pemilik_id', 'nama', 'satuan', 'stok']),
+        ]);
+    }
+
+    public function history(Request $request): View
     {
         $filters = $request->validate([
             'tanggal_mulai' => ['nullable', 'date_format:Y-m-d'],
             'tanggal_selesai' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:tanggal_mulai'],
             'pemilik' => ['nullable', 'string', 'exists:pemiliks,kode'],
         ]);
-        $pemiliks = Pemilik::query()->orderByRaw('CAST(kode AS DECIMAL(20, 0))')->get();
-        $lastKode = session('last_pemilik_kode');
-        $query = Penjualan::query()->with('produk.pemilik');
+        $query = Penjualan::query()->with([
+            'produk:id,nama,satuan,pemilik_id',
+            'produk.pemilik:id,kode,nama',
+        ]);
 
         if (! empty($filters['tanggal_mulai'])) {
             $query->whereDate('tanggal', '>=', $filters['tanggal_mulai']);
@@ -218,20 +238,9 @@ class PenjualanController extends Controller
             $query->whereHas('produk.pemilik', fn ($ownerQuery) => $ownerQuery->where('kode', $filters['pemilik']));
         }
 
-        return view($request->routeIs('penjualan.history')
-            ? 'keuangan.transaksi.history'
-            : 'keuangan.transaksi.stock-list', [
+        return view('keuangan.transaksi.history', [
             'jenisTransaksi' => 'Penjualan',
-            'nomorBerikutnya' => Penjualan::query()->count() + 1,
-            'pemiliks' => $pemiliks,
-            'lastPemilikKode' => $pemiliks->contains('kode', $lastKode) ? $lastKode : null,
-            'produks' => Produk::query()->with('pemilik')->orderBy('nama')->get(),
-            'produksTersedia' => Produk::query()
-                ->where('stok', '>', 0)
-                ->with('pemilik')
-                ->orderBy('nama')
-                ->orderBy('satuan')
-                ->get(['id', 'pemilik_id', 'nama', 'satuan', 'stok']),
+            'pemiliks' => Pemilik::query()->orderByRaw('CAST(kode AS DECIMAL(20, 0))')->get(),
             'transaksiList' => $query->latest('tanggal')->latest('id')->get()->map(fn (Penjualan $p) => (object) [
                 'id' => $p->id,
                 'tanggal' => $p->tanggal,
@@ -246,9 +255,6 @@ class PenjualanController extends Controller
             'pemilikTerpilih' => $filters['pemilik'] ?? '',
             'tanggalMulai' => $filters['tanggal_mulai'] ?? '',
             'tanggalSelesai' => $filters['tanggal_selesai'] ?? '',
-            'pemilikTerpilihNama' => ! empty($filters['pemilik'])
-                ? Pemilik::query()->where('kode', $filters['pemilik'])->value('nama')
-                : null,
         ]);
     }
 
