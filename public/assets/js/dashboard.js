@@ -250,49 +250,81 @@ $(function () {
   };
   new ApexCharts(document.querySelector("#earning"), earning).render();
 
-  // Pencarian pada tabel stok akhir dashboard.
-  const stockSearch = document.querySelector("#stok-akhir-search");
-  const stockTable = document.querySelector("#stok-akhir-table");
+  // Pencarian pada tabel-tabel dashboard.
+  function initDashboardTableSearch(options) {
+    const input = document.querySelector(options.input);
+    const table = document.querySelector(options.table);
 
-  if (stockSearch && stockTable) {
-    const stockBody = stockTable.tBodies[0];
-    const stockRows = Array.from(stockBody.querySelectorAll("[data-stock-row]"));
-    const stockEmpty = stockBody.querySelector("[data-stock-empty]");
-
-    if (stockRows.length) {
-      const noResult = document.createElement("tr");
-      noResult.hidden = true;
-      noResult.innerHTML = '<td colspan="7" class="text-center text-muted py-4">Barang tidak ditemukan.</td>';
-      stockBody.appendChild(noResult);
-
-      const normalize = (value) => (value || "").toLowerCase().trim();
-
-      const filterStock = () => {
-        const keyword = normalize(stockSearch.value);
-        let shown = 0;
-
-        stockRows.forEach((row) => {
-          const matched = !keyword || normalize(row.dataset.stockSearch).includes(keyword);
-          row.hidden = !matched;
-
-          if (matched) {
-            shown += 1;
-            const number = row.querySelector("[data-stock-number]");
-            if (number) {
-              number.textContent = shown;
-            }
-          }
-        });
-
-        if (stockEmpty) {
-          stockEmpty.hidden = shown > 0;
-        }
-        noResult.hidden = shown > 0 || !keyword;
-      };
-
-      $(stockSearch).on("input search", filterStock);
+    if (!input || !table) {
+      return;
     }
+
+    const body = table.tBodies[0];
+    const rows = Array.from(body.querySelectorAll(options.row));
+    const empty = body.querySelector(options.empty);
+
+    if (!rows.length) {
+      return;
+    }
+
+    const noResult = document.createElement("tr");
+    const noResultCell = document.createElement("td");
+    noResultCell.colSpan = options.colspan;
+    noResultCell.className = "text-center text-muted py-4";
+    noResultCell.textContent = options.noResultText;
+    noResult.appendChild(noResultCell);
+    noResult.hidden = true;
+    body.appendChild(noResult);
+
+    const normalize = (value) => (value || "").toLowerCase().trim();
+
+    const filter = () => {
+      const keyword = normalize(input.value);
+      let shown = 0;
+
+      rows.forEach((row) => {
+        const matched = !keyword || normalize(row.dataset[options.searchKey]).includes(keyword);
+        row.hidden = !matched;
+
+        if (matched) {
+          shown += 1;
+          const number = row.querySelector(options.number);
+          if (number) {
+            number.textContent = shown;
+          }
+        }
+      });
+
+      if (empty) {
+        empty.hidden = shown > 0;
+      }
+      noResult.hidden = shown > 0 || !keyword;
+    };
+
+    $(input).on("input search", filter);
   }
+
+  initDashboardTableSearch({
+    input: "#stok-akhir-search",
+    table: "#stok-akhir-table",
+    row: "[data-stock-row]",
+    number: "[data-stock-number]",
+    empty: "[data-stock-empty]",
+    searchKey: "stockSearch",
+    colspan: 7,
+    noResultText: "Barang tidak ditemukan.",
+  });
+
+  initDashboardTableSearch({
+    input: "#omset-toko-search",
+    table: "#omset-toko-table",
+    row: "[data-store-row]",
+    number: "[data-store-number]",
+    empty: "[data-store-empty]",
+    searchKey: "storeSearch",
+    colspan: 5,
+    noResultText: "Toko tidak ditemukan.",
+  });
 
   // Grafik harian dirender paling akhir supaya tinggi kartu kanan sudah final.
   // Tingginya dihitung agar bagian bawah grafik menyentuh batas kotak.

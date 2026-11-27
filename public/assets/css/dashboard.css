@@ -263,11 +263,12 @@
   color: #105f35;
 }
 
-.bmt-dashboard .dash-card-head--stock {
+.bmt-dashboard .dash-card-head--stock,
+.bmt-dashboard .dash-card-head--store {
   flex-wrap: wrap;
 }
 
-.bmt-dashboard .dash-stock-tools {
+.bmt-dashboard .dash-table-tools {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -511,7 +512,7 @@
   .bmt-dashboard .dash-filter-field,
   .bmt-dashboard .dash-filter .form-control,
   .bmt-dashboard .dash-filter .btn,
-  .bmt-dashboard .dash-stock-tools,
+  .bmt-dashboard .dash-table-tools,
   .bmt-dashboard .dash-search {
     width: 100%;
   }

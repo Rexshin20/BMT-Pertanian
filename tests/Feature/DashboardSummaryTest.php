@@ -51,6 +51,7 @@ class DashboardSummaryTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Ringkasan Omset per Toko')
+            ->assertSee('id="omset-toko-search"', false)
             ->assertSee('TOTAL SEMUA TOKO')
             ->assertDontSee('Total (Penjualan - Pembelian)');
 
@@ -105,6 +106,7 @@ class DashboardSummaryTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Stok Akhir (Barang Belum Terjual)')
+            ->assertSee('id="stok-akhir-search"', false)
             ->assertSee('Nilai Stok Akhir')
             ->assertSee('Obat Sisa')
             ->assertDontSee('Obat Habis');

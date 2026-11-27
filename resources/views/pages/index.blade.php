@@ -62,7 +62,7 @@
       <div class="col-md-4 d-flex">
         <div class="dash-kpi dash-kpi--stock w-100">
           <div class="dash-kpi-head">
-            <span class="dash-kpi-label">Total Stok Akhir</span>
+            <span class="dash-kpi-label">Nilai Stok Akhir</span>
             <span class="dash-kpi-icon"><i class="ti ti-packages"></i></span>
           </div>
           <div class="dash-kpi-value">Rp {{ number_format($totalNilaiStok, 0, ',', '.') }}</div>
@@ -129,14 +129,22 @@
     <!-- Ringkasan omset per toko -->
     <div class="dash-card mt-3">
       <div class="dash-card-body">
-        <div class="dash-card-head">
+        <div class="dash-card-head dash-card-head--store">
           <div>
             <h5 class="dash-card-title">Ringkasan Omset per Toko</h5>
             <p class="dash-card-sub">Penjualan dan pembelian per toko · {{ $periodeLabel }}</p>
           </div>
+          <div class="dash-table-tools">
+            <label class="visually-hidden" for="omset-toko-search">Cari toko</label>
+            <div class="dash-search">
+              <i class="ti ti-search" aria-hidden="true"></i>
+              <input type="search" id="omset-toko-search" class="form-control" placeholder="Cari ID atau nama toko"
+                autocomplete="off">
+            </div>
+          </div>
         </div>
         <div class="table-responsive">
-          <table class="table dash-table align-middle mb-0">
+          <table id="omset-toko-table" class="table dash-table align-middle mb-0">
             <thead>
               <tr>
                 <th>No.</th>
@@ -148,15 +156,15 @@
             </thead>
             <tbody>
               @forelse ($storeSummaries as $store)
-                <tr>
-                  <td class="muted">{{ $loop->iteration }}</td>
+                <tr data-store-row data-store-search="{{ $store['id'] }} {{ $store['nama'] }}">
+                  <td class="muted" data-store-number>{{ $loop->iteration }}</td>
                   <td class="muted">{{ $store['id'] }}</td>
                   <td class="strong">{{ $store['nama'] }}</td>
                   <td class="num">Rp {{ number_format($store['sales'], 0, ',', '.') }}</td>
                   <td class="num">Rp {{ number_format($store['purchases'], 0, ',', '.') }}</td>
                 </tr>
               @empty
-                <tr><td colspan="5" class="text-center text-muted py-4">Belum ada toko terdaftar.</td></tr>
+                <tr data-store-empty><td colspan="5" class="text-center text-muted py-4">Belum ada toko terdaftar.</td></tr>
               @endforelse
             </tbody>
             <tfoot>
@@ -179,7 +187,7 @@
             <h5 class="dash-card-title">Stok Akhir (Barang Belum Terjual)</h5>
             <p class="dash-card-sub">Sisa stok per {{ $stokPerTanggal }} · {{ $totalItemStok }} item</p>
           </div>
-          <div class="dash-stock-tools">
+          <div class="dash-table-tools">
             <label class="visually-hidden" for="stok-akhir-search">Cari stok akhir</label>
             <div class="dash-search">
               <i class="ti ti-search" aria-hidden="true"></i>
