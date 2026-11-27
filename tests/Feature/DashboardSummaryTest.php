@@ -79,6 +79,45 @@ class DashboardSummaryTest extends TestCase
         $this->assertSame(850.0, $filteredStores['Bambang']['sales']);
     }
 
+    public function test_dashboard_lists_remaining_stock_and_its_value(): void
+    {
+        $bambang = Pemilik::query()->where('kode', '001')->firstOrFail();
+
+        $produkSisa = Produk::query()->create([
+            'pemilik_id' => $bambang->id,
+            'nama' => 'Obat Sisa',
+            'satuan' => 'pcs',
+        ]);
+        $produkSisa->stok = '3.500';
+        $produkSisa->harga_beli = '1000';
+        $produkSisa->save();
+
+        $produkHabis = Produk::query()->create([
+            'pemilik_id' => $bambang->id,
+            'nama' => 'Obat Habis',
+            'satuan' => 'pcs',
+        ]);
+        $produkHabis->stok = '0';
+        $produkHabis->harga_beli = '500';
+        $produkHabis->save();
+
+        $response = $this->get(route('dashboard'));
+
+        $response->assertOk()
+            ->assertSee('Stok Akhir (Barang Belum Terjual)')
+            ->assertSee('Nilai Stok Akhir')
+            ->assertSee('Obat Sisa')
+            ->assertDontSee('Obat Habis');
+
+        $this->assertSame(3500.0, $response->viewData('totalNilaiStok'));
+        $this->assertSame(1, $response->viewData('totalItemStok'));
+
+        $stok = collect($response->viewData('stokAkhirs'))->first();
+        $this->assertSame('Obat Sisa', $stok['nama']);
+        $this->assertSame(3.5, $stok['stok']);
+        $this->assertSame(3500.0, $stok['nilai']);
+    }
+
     private function createSale(Produk $produk, string $tanggal, float $cost, float $price): void
     {
         Penjualan::query()->create([

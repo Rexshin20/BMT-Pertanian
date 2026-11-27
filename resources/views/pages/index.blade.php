@@ -185,9 +185,9 @@
           </div>
         </form>
 
-        <!-- Total penjualan dan pembelian -->
+        <!-- Total penjualan, pembelian, dan stok akhir -->
         <div class="row">
-          <div class="col-md-6 d-flex align-items-stretch">
+          <div class="col-md-6 col-lg-4 d-flex align-items-stretch">
             <div class="card w-100">
               <div class="card-body p-4">
                 <div class="d-flex align-items-start justify-content-between">
@@ -201,7 +201,7 @@
               </div>
             </div>
           </div>
-          <div class="col-md-6 d-flex align-items-stretch">
+          <div class="col-md-6 col-lg-4 d-flex align-items-stretch">
             <div class="card w-100">
               <div class="card-body p-4">
                 <div class="d-flex align-items-start justify-content-between">
@@ -211,6 +211,20 @@
                     <p class="fs-3 text-muted mb-0">{{ $periodeLabel }}</p>
                   </div>
                   <span class="text-white bg-danger rounded p-3 d-inline-flex"><i class="ti ti-basket fs-5"></i></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-4 d-flex align-items-stretch">
+            <div class="card w-100">
+              <div class="card-body p-4">
+                <div class="d-flex align-items-start justify-content-between">
+                  <div>
+                    <h5 class="card-title fw-semibold mb-2">Nilai Stok Akhir</h5>
+                    <h4 class="fw-semibold mb-1">Rp {{ number_format($totalNilaiStok, 0, ',', '.') }}</h4>
+                    <p class="fs-3 text-muted mb-0">{{ $totalItemStok }} item belum terjual · per {{ $stokPerTanggal }}</p>
+                  </div>
+                  <span class="text-white bg-info rounded p-3 d-inline-flex"><i class="ti ti-packages fs-5"></i></span>
                 </div>
               </div>
             </div>
@@ -330,6 +344,58 @@
                         <td colspan="3">TOTAL SEMUA TOKO</td>
                         <td class="text-end">Rp {{ number_format($totalSales, 0, ',', '.') }}</td>
                         <td class="text-end">Rp {{ number_format($totalPurchases, 0, ',', '.') }}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Stok akhir / barang belum terjual -->
+        <div class="row">
+          <div class="col-12 d-flex align-items-stretch">
+            <div class="card w-100">
+              <div class="card-body p-4">
+                <div class="d-sm-flex d-block align-items-center justify-content-between mb-4">
+                  <div>
+                    <h5 class="card-title fw-semibold mb-1">Stok Akhir (Barang Belum Terjual)</h5>
+                    <p class="fs-3 text-muted mb-0">Sisa stok per {{ $stokPerTanggal }} · {{ $totalItemStok }} item</p>
+                  </div>
+                  <a href="{{ route('laporan.stok-akhir') }}" class="text-primary">Lihat semua</a>
+                </div>
+                <div class="table-responsive" style="max-height: 420px;">
+                  <table class="table table-hover align-middle mb-0">
+                    <thead class="text-dark fs-4" style="position: sticky; top: 0; background: #fff; z-index: 1;">
+                      <tr>
+                        <th><h6 class="fw-semibold mb-0">No.</h6></th>
+                        <th><h6 class="fw-semibold mb-0">Nama Barang</h6></th>
+                        <th><h6 class="fw-semibold mb-0">Toko</h6></th>
+                        <th><h6 class="fw-semibold mb-0">Satuan</h6></th>
+                        <th class="text-end"><h6 class="fw-semibold mb-0">Stok Akhir</h6></th>
+                        <th class="text-end"><h6 class="fw-semibold mb-0">Harga Beli</h6></th>
+                        <th class="text-end"><h6 class="fw-semibold mb-0">Nilai Stok</h6></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @forelse ($stokAkhirs as $item)
+                        <tr>
+                          <td>{{ $loop->iteration }}</td>
+                          <td class="fw-semibold">{{ $item['nama'] }}</td>
+                          <td>{{ $item['toko'] }}</td>
+                          <td>{{ $item['satuan'] ?: '-' }}</td>
+                          <td class="text-end">{{ rtrim(rtrim(number_format($item['stok'], 3, ',', '.'), '0'), ',') }}</td>
+                          <td class="text-end">Rp {{ number_format($item['harga_beli'], 0, ',', '.') }}</td>
+                          <td class="text-end fw-semibold">Rp {{ number_format($item['nilai'], 0, ',', '.') }}</td>
+                        </tr>
+                      @empty
+                        <tr><td colspan="7" class="text-center text-muted py-4">Semua barang sudah terjual / belum ada stok.</td></tr>
+                      @endforelse
+                    </tbody>
+                    <tfoot class="fw-semibold">
+                      <tr class="bg-light">
+                        <td colspan="6">TOTAL NILAI STOK AKHIR</td>
+                        <td class="text-end">Rp {{ number_format($totalNilaiStok, 0, ',', '.') }}</td>
                       </tr>
                     </tfoot>
                   </table>

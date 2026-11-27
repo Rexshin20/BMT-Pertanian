@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Pembelian;
 use App\Models\Pemilik;
 use App\Models\Penjualan;
+use App\Models\Produk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
@@ -120,6 +121,38 @@ class DashboardController extends Controller
             ->values()
             ->all();
 
+        $terjualSetelah = Penjualan::query()
+            ->whereDate('tanggal', '>', $dateTo)
+            ->groupBy('produk_id')
+            ->selectRaw('produk_id, COALESCE(SUM(jumlah), 0) AS total_jumlah')
+            ->pluck('total_jumlah', 'produk_id');
+
+        $stokAkhirs = Produk::query()
+            ->with('pemilik')
+            ->get()
+            ->map(function (Produk $produk) use ($terjualSetelah): array {
+                // Stok sekarang ditambah penjualan setelah tanggal akhir, supaya
+                // angkanya sesuai posisi stok pada tanggal tersebut.
+                $stok = (float) $produk->stok + (float) ($terjualSetelah[$produk->id] ?? 0);
+                $hargaBeli = (float) ($produk->harga_beli ?? 0);
+
+                return [
+                    'nama' => trim($produk->nama),
+                    'toko' => $produk->pemilik->nama ?? 'Tanpa pemilik',
+                    'satuan' => trim((string) $produk->satuan),
+                    'stok' => $stok,
+                    'harga_beli' => $hargaBeli,
+                    'nilai' => $stok > 0 ? $stok * $hargaBeli : 0.0,
+                ];
+            })
+            ->filter(fn (array $item) => $item['stok'] > 0)
+            ->sortByDesc('nilai')
+            ->values();
+
+        $totalNilaiStok = (float) $stokAkhirs->sum('nilai');
+        $totalItemStok = $stokAkhirs->count();
+        $stokPerTanggal = $tanggalSelesai->copy()->locale('id')->translatedFormat('d M Y');
+
         $earliestTransaction = collect([
             Penjualan::query()->min('tanggal'),
             Pembelian::query()->min('tanggal'),
@@ -202,6 +235,10 @@ class DashboardController extends Controller
             'totalSales' => $totalSales,
             'totalPurchases' => $totalPurchases,
             'storeSummaries' => $storeSummaries,
+            'stokAkhirs' => $stokAkhirs,
+            'totalNilaiStok' => $totalNilaiStok,
+            'totalItemStok' => $totalItemStok,
+            'stokPerTanggal' => $stokPerTanggal,
             'recentTransactions' => $sales
                 ->concat($purchases)
                 ->sortByDesc(fn (array $transaction) => $transaction['created_at']?->timestamp ?? 0)
