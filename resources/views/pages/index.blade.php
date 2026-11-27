@@ -62,7 +62,7 @@
       <div class="col-md-4 d-flex">
         <div class="dash-kpi dash-kpi--stock w-100">
           <div class="dash-kpi-head">
-            <span class="dash-kpi-label">Nilai Stok Akhir</span>
+            <span class="dash-kpi-label">Total Stok Akhir</span>
             <span class="dash-kpi-icon"><i class="ti ti-packages"></i></span>
           </div>
           <div class="dash-kpi-value">Rp {{ number_format($totalNilaiStok, 0, ',', '.') }}</div>
