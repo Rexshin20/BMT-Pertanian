@@ -88,6 +88,8 @@ $(function () {
       type: "category",
       categories: dashboardData.labels,
       labels: {
+        rotate: -45,
+        hideOverlappingLabels: true,
         style: { cssClass: "grey--text lighten-2--text fill-color" },
       },
     },
@@ -146,7 +148,7 @@ $(function () {
     series: [dashboardData.yearCost, Math.max(dashboardData.yearProfit, 0), Math.max(-dashboardData.yearProfit, 0)],
     labels: ["Modal terjual", "Laba", "Rugi"],
     chart: {
-      width: 180,
+      width: 150,
       type: "donut",
       fontFamily: "Plus Jakarta Sans', sans-serif",
       foreColor: "#adb0bb",
@@ -178,7 +180,7 @@ $(function () {
         breakpoint: 991,
         options: {
           chart: {
-            width: 150,
+            width: 130,
           },
         },
       },
@@ -247,6 +249,50 @@ $(function () {
     },
   };
   new ApexCharts(document.querySelector("#earning"), earning).render();
+
+  // Pencarian pada tabel stok akhir dashboard.
+  const stockSearch = document.querySelector("#stok-akhir-search");
+  const stockTable = document.querySelector("#stok-akhir-table");
+
+  if (stockSearch && stockTable) {
+    const stockBody = stockTable.tBodies[0];
+    const stockRows = Array.from(stockBody.querySelectorAll("[data-stock-row]"));
+    const stockEmpty = stockBody.querySelector("[data-stock-empty]");
+
+    if (stockRows.length) {
+      const noResult = document.createElement("tr");
+      noResult.hidden = true;
+      noResult.innerHTML = '<td colspan="7" class="text-center text-muted py-4">Barang tidak ditemukan.</td>';
+      stockBody.appendChild(noResult);
+
+      const normalize = (value) => (value || "").toLowerCase().trim();
+
+      const filterStock = () => {
+        const keyword = normalize(stockSearch.value);
+        let shown = 0;
+
+        stockRows.forEach((row) => {
+          const matched = !keyword || normalize(row.dataset.stockSearch).includes(keyword);
+          row.hidden = !matched;
+
+          if (matched) {
+            shown += 1;
+            const number = row.querySelector("[data-stock-number]");
+            if (number) {
+              number.textContent = shown;
+            }
+          }
+        });
+
+        if (stockEmpty) {
+          stockEmpty.hidden = shown > 0;
+        }
+        noResult.hidden = shown > 0 || !keyword;
+      };
+
+      $(stockSearch).on("input search", filterStock);
+    }
+  }
 
   // Grafik harian dirender paling akhir supaya tinggi kartu kanan sudah final.
   // Tingginya dihitung agar bagian bawah grafik menyentuh batas kotak.

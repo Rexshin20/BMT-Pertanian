@@ -1,488 +1,313 @@
-<!doctype html>
-<html lang="id">
+@extends('layouts.modernize')
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard - Koperasi Konsumen Cinde Barokah Sejahtera</title>
-  <link rel="shortcut icon" type="image/png" href="{{ asset('assets/images/logos/bmt-cinde-barokah.png') }}" />
-  <link rel="stylesheet" href="{{ asset('assets/css/styles.min.css') }}" />
-  <link rel="stylesheet" href="{{ asset('assets/css/bmt-theme.css') }}" />
-</head>
+@section('title', 'Dashboard')
+@section('page-title', 'Dashboard')
 
-<body>
-  <!--  Body Wrapper -->
-  <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
-    data-sidebar-position="fixed" data-header-position="fixed">
-    <!-- Sidebar Start -->
-    <aside class="left-sidebar">
-      <!-- Sidebar scroll-->
-      <div>
-        <div class="brand-logo d-flex align-items-center justify-content-between">
-          <div class="bmt-brand text-nowrap">
-            <img src="{{ asset('assets/images/logos/bmt-cinde-barokah.png') }}" alt="Logo Koperasi Konsumen Cinde Barokah Sejahtera" />
-            <span class="bmt-brand-name"><strong>KOPERASI KONSUMEN</strong><small>Cinde Barokah Sejahtera</small></span>
+@push('styles')
+  <link rel="stylesheet" href="{{ asset('assets/css/dashboard.css') }}?v={{ filemtime(public_path('assets/css/dashboard.css')) }}">
+@endpush
+
+@section('content')
+  <div class="bmt-dashboard">
+    <!-- Filter periode -->
+    <div class="dash-toolbar">
+      <div class="dash-toolbar-meta">
+        <div>
+          <div class="dash-toolbar-eyebrow">Periode laporan</div>
+          <div class="dash-toolbar-period">{{ $periodeLabel }}</div>
+        </div>
+        <div class="dash-presets">
+          @foreach ($filterPresets as $preset)
+            <a href="{{ $preset['url'] }}" class="dash-preset {{ $preset['active'] ? 'is-active' : '' }}">{{ $preset['label'] }}</a>
+          @endforeach
+        </div>
+      </div>
+      <form method="GET" action="{{ route('dashboard') }}" class="dash-filter">
+        <div class="dash-filter-field">
+          <label for="tanggal_mulai">Dari</label>
+          <input type="date" class="form-control" id="tanggal_mulai" name="tanggal_mulai" value="{{ $tanggalMulai }}">
+        </div>
+        <div class="dash-filter-field">
+          <label for="tanggal_selesai">Sampai</label>
+          <input type="date" class="form-control" id="tanggal_selesai" name="tanggal_selesai" value="{{ $tanggalSelesai }}"
+            min="{{ $tanggalMulai }}">
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="ti ti-filter me-1"></i>Terapkan</button>
+        <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">Reset</a>
+      </form>
+    </div>
+
+    <!-- Total penjualan, pembelian, dan stok akhir -->
+    <div class="row g-3">
+      <div class="col-md-4 d-flex">
+        <div class="dash-kpi dash-kpi--sales w-100">
+          <div class="dash-kpi-head">
+            <span class="dash-kpi-label">Total Penjualan</span>
+            <span class="dash-kpi-icon"><i class="ti ti-arrow-up-right"></i></span>
           </div>
-          <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
-            <i class="ti ti-x fs-8"></i>
+          <div class="dash-kpi-value">Rp {{ number_format($totalSales, 0, ',', '.') }}</div>
+          <div class="dash-kpi-foot">{{ $periodeLabel }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 d-flex">
+        <div class="dash-kpi dash-kpi--purchases w-100">
+          <div class="dash-kpi-head">
+            <span class="dash-kpi-label">Total Pembelian</span>
+            <span class="dash-kpi-icon"><i class="ti ti-arrow-down-left"></i></span>
+          </div>
+          <div class="dash-kpi-value">Rp {{ number_format($totalPurchases, 0, ',', '.') }}</div>
+          <div class="dash-kpi-foot">{{ $periodeLabel }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 d-flex">
+        <div class="dash-kpi dash-kpi--stock w-100">
+          <div class="dash-kpi-head">
+            <span class="dash-kpi-label">Nilai Stok Akhir</span>
+            <span class="dash-kpi-icon"><i class="ti ti-packages"></i></span>
+          </div>
+          <div class="dash-kpi-value">Rp {{ number_format($totalNilaiStok, 0, ',', '.') }}</div>
+          <div class="dash-kpi-foot">{{ $totalItemStok }} item belum terjual · per {{ $stokPerTanggal }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grafik dan ringkasan -->
+    <div class="row g-3 mt-1">
+      <div class="col-xl-8 d-flex">
+        <div class="dash-card dash-chart-card w-100">
+          <div class="dash-card-body">
+            <div class="dash-card-head">
+              <div>
+                <h5 class="dash-card-title">{{ $dashboardData['chartTitle'] }}</h5>
+                <p class="dash-card-sub">{{ $dashboardData['periodeLabel'] }}</p>
+              </div>
+            </div>
+            <div id="chart"></div>
           </div>
         </div>
-        <!-- Sidebar navigation-->
-        <nav class="sidebar-nav scroll-sidebar" data-simplebar="">
-          <ul id="sidebarnav">
-            <li class="nav-small-cap">
-              <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
-              <span class="hide-menu">Home</span>
-            </li>
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('dashboard') }}" aria-expanded="false">
-                <span>
-                  <i class="ti ti-layout-dashboard"></i>
-                </span>
-                <span class="hide-menu">Dashboard</span>
-              </a>
-            </li>
-            <li class="nav-small-cap">
-              <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
-              <span class="hide-menu">VIEW</span>
-            </li>
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('penjualan.index') }}">
-                <span><i class="ti ti-shopping-cart"></i></span>
-                <span class="hide-menu">Penjualan</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('pembelian.index') }}">
-                <span><i class="ti ti-basket"></i></span>
-                <span class="hide-menu">Pembelian</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('laporan.laba-rugi') }}">
-                <span><i class="ti ti-report-money"></i></span>
-                <span class="hide-menu">Laba Rugi</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('laporan.stok-akhir') }}">
-                <span><i class="ti ti-packages"></i></span>
-                <span class="hide-menu">Stok Akhir</span>
-              </a>
-            </li>
-            <li class="nav-small-cap">
-              <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
-              <span class="hide-menu">MASTER DATA</span>
-            </li>
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('pemilik.index') }}">
-                <span><i class="ti ti-id"></i></span>
-                <span class="hide-menu">Master ID Nama</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('penjualan.create.list') }}">
-                <span><i class="ti ti-shopping-cart-plus"></i></span>
-                <span class="hide-menu">Create Penjualan</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('pembelian.create.list') }}">
-                <span><i class="ti ti-receipt"></i></span>
-                <span class="hide-menu">Create Pembelian</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('impor.index') }}">
-                <span><i class="ti ti-file-import"></i></span>
-                <span class="hide-menu">Impor</span>
-              </a>
-            </li>
-            <li class="nav-small-cap">
-              <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
-              <span class="hide-menu">ACCOUNT</span>
-            </li>
-            <li class="sidebar-item">
-              <a class="sidebar-link" href="{{ route('account.edit') }}" aria-expanded="false">
-                <span>
-                  <i class="ti ti-user"></i>
-                </span>
-                <span class="hide-menu">Edit Account</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button class="sidebar-link border-0 bg-transparent w-100 text-start" type="submit">
-                  <span><i class="ti ti-logout"></i></span>
-                  <span class="hide-menu">Logout</span>
-                </button>
-              </form>
-            </li>
-          </ul>
-        </nav>
-        <!-- End Sidebar navigation -->
       </div>
-      <!-- End Sidebar scroll-->
-    </aside>
-    <!--  Sidebar End -->
-    <!--  Main wrapper -->
-    <div class="body-wrapper">
-      <!--  Header Start -->
-      <header class="app-header">
-        <nav class="navbar navbar-expand-lg navbar-light">
-          <ul class="navbar-nav">
-            <li class="nav-item d-block d-xl-none">
-              <a class="nav-link sidebartoggler nav-icon-hover" id="headerCollapse" href="javascript:void(0)">
-                <i class="ti ti-menu-2"></i>
-              </a>
-            </li>
-            <li class="nav-item">
-              <span class="nav-link">Koperasi Konsumen Cinde Barokah Sejahtera</span>
-            </li>
-          </ul>
-          <div class="navbar-collapse justify-content-end px-0" id="navbarNav">
-            <ul class="navbar-nav flex-row ms-auto align-items-center justify-content-end">
-              <li class="nav-item"><span class="nav-link">{{ auth()->user()->name }}</span></li>
+      <div class="col-xl-4">
+        <div class="d-flex flex-column gap-3 h-100">
+          <!-- Ringkasan penjualan -->
+          <div class="dash-card">
+            <div class="dash-card-body">
+              <div class="dash-card-head mb-2">
+                <div>
+                  <h5 class="dash-card-title">Ringkasan Penjualan</h5>
+                  <p class="dash-card-sub">{{ $dashboardData['periodeLabel'] }}</p>
+                </div>
+              </div>
+              <div class="dash-summary">
+                <div class="dash-summary-value">Rp {{ number_format($dashboardData['yearSales'], 0, ',', '.') }}</div>
+                <div id="breakup"></div>
+              </div>
+              <div class="dash-summary-meta">
+                <span><span class="dash-dot dash-dot--sales"></span>Modal Rp {{ number_format($dashboardData['yearCost'], 0, ',', '.') }}</span>
+                <span><span class="dash-dot dash-dot--profit"></span>{{ $dashboardData['yearProfit'] < 0 ? 'Rugi' : 'Laba' }} Rp {{ number_format(abs($dashboardData['yearProfit']), 0, ',', '.') }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Laba / rugi -->
+          <div class="dash-card flex-grow-1">
+            <div class="dash-card-body">
+              <div class="dash-card-head mb-2">
+                <div>
+                  <h5 class="dash-card-title">Laba / Rugi</h5>
+                  <p class="dash-card-sub">{{ $dashboardData['periodeLabel'] }}</p>
+                </div>
+                <span class="dash-kpi-icon {{ $dashboardData['monthProfit'] < 0 ? 'dash-kpi-icon--danger' : '' }}"><i class="ti ti-report-money"></i></span>
+              </div>
+              <div class="dash-summary-value {{ $dashboardData['monthProfit'] < 0 ? 'is-negative' : '' }}">Rp {{ number_format($dashboardData['monthProfit'], 0, ',', '.') }}</div>
+              <div id="earning"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ringkasan omset per toko -->
+    <div class="dash-card mt-3">
+      <div class="dash-card-body">
+        <div class="dash-card-head">
+          <div>
+            <h5 class="dash-card-title">Ringkasan Omset per Toko</h5>
+            <p class="dash-card-sub">Penjualan dan pembelian per toko · {{ $periodeLabel }}</p>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table dash-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>ID</th>
+                <th>Nama Toko</th>
+                <th class="num">Penjualan</th>
+                <th class="num">Pembelian</th>
+              </tr>
+            </thead>
+            <tbody>
+              @forelse ($storeSummaries as $store)
+                <tr>
+                  <td class="muted">{{ $loop->iteration }}</td>
+                  <td class="muted">{{ $store['id'] }}</td>
+                  <td class="strong">{{ $store['nama'] }}</td>
+                  <td class="num">Rp {{ number_format($store['sales'], 0, ',', '.') }}</td>
+                  <td class="num">Rp {{ number_format($store['purchases'], 0, ',', '.') }}</td>
+                </tr>
+              @empty
+                <tr><td colspan="5" class="text-center text-muted py-4">Belum ada toko terdaftar.</td></tr>
+              @endforelse
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3">TOTAL SEMUA TOKO</td>
+                <td class="num">Rp {{ number_format($totalSales, 0, ',', '.') }}</td>
+                <td class="num">Rp {{ number_format($totalPurchases, 0, ',', '.') }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stok akhir / barang belum terjual -->
+    <div class="dash-card mt-3">
+      <div class="dash-card-body">
+        <div class="dash-card-head dash-card-head--stock">
+          <div>
+            <h5 class="dash-card-title">Stok Akhir (Barang Belum Terjual)</h5>
+            <p class="dash-card-sub">Sisa stok per {{ $stokPerTanggal }} · {{ $totalItemStok }} item</p>
+          </div>
+          <div class="dash-stock-tools">
+            <label class="visually-hidden" for="stok-akhir-search">Cari stok akhir</label>
+            <div class="dash-search">
+              <i class="ti ti-search" aria-hidden="true"></i>
+              <input type="search" id="stok-akhir-search" class="form-control" placeholder="Cari barang, toko, atau satuan"
+                autocomplete="off">
+            </div>
+            <a href="{{ route('laporan.stok-akhir') }}" class="dash-link">Lihat semua <i class="ti ti-arrow-right"></i></a>
+          </div>
+        </div>
+        <div class="dash-stock-scroll">
+          <table id="stok-akhir-table" class="table dash-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Nama Barang</th>
+                <th>Toko</th>
+                <th>Satuan</th>
+                <th class="num">Stok Akhir</th>
+                <th class="num">Harga Beli</th>
+                <th class="num">Nilai Stok</th>
+              </tr>
+            </thead>
+            <tbody>
+              @forelse ($stokAkhirs as $item)
+                <tr data-stock-row data-stock-search="{{ $item['nama'] }} {{ $item['toko'] }} {{ $item['satuan'] }}">
+                  <td class="muted" data-stock-number>{{ $loop->iteration }}</td>
+                  <td class="strong">{{ $item['nama'] }}</td>
+                  <td>{{ $item['toko'] }}</td>
+                  <td class="muted">{{ $item['satuan'] ?: '-' }}</td>
+                  <td class="num">{{ rtrim(rtrim(number_format($item['stok'], 3, ',', '.'), '0'), ',') }}</td>
+                  <td class="num">Rp {{ number_format($item['harga_beli'], 0, ',', '.') }}</td>
+                  <td class="num strong">Rp {{ number_format($item['nilai'], 0, ',', '.') }}</td>
+                </tr>
+              @empty
+                <tr data-stock-empty><td colspan="7" class="text-center text-muted py-4">Semua barang sudah terjual / belum ada stok.</td></tr>
+              @endforelse
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="6">TOTAL NILAI STOK AKHIR</td>
+                <td class="num">Rp {{ number_format($totalNilaiStok, 0, ',', '.') }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aktivitas dan transaksi terbaru -->
+    <div class="row g-3 mt-1">
+      <div class="col-xl-4 d-flex">
+        <div class="dash-card w-100">
+          <div class="dash-card-body">
+            <div class="dash-card-head mb-3">
+              <div>
+                <h5 class="dash-card-title">Aktivitas Transaksi</h5>
+                <p class="dash-card-sub">Transaksi terbaru pada periode ini</p>
+              </div>
+            </div>
+            <ul class="timeline-widget mb-0 position-relative">
+              @forelse ($recentTransactions as $transaction)
+                <li class="timeline-item d-flex position-relative overflow-hidden">
+                  <div class="timeline-time flex-shrink-0 text-end">{{ $transaction['date']->format('d/m') }}</div>
+                  <div class="timeline-badge-wrap d-flex flex-column align-items-center">
+                    <span class="timeline-badge border-2 border border-{{ $transaction['type'] === 'Penjualan' ? 'primary' : 'danger' }} flex-shrink-0 my-8"></span>
+                    @if (!$loop->last)<span class="timeline-badge-border d-block flex-shrink-0"></span>@endif
+                  </div>
+                  <div class="timeline-desc mt-n1">
+                    <span class="fw-semibold">{{ $transaction['type'] }}</span> {{ $transaction['name'] }}
+                    <span class="d-block text-muted">Rp {{ number_format($transaction['amount'], 0, ',', '.') }}</span>
+                  </div>
+                </li>
+              @empty
+                <li class="text-muted">Belum ada transaksi.</li>
+              @endforelse
             </ul>
           </div>
-        </nav>
-      </header>
-      <!--  Header End -->
-      <div class="container-fluid app-content-with-footer">
-        <!-- Filter periode -->
-        <form method="GET" action="{{ route('dashboard') }}" class="card mb-4">
-          <div class="card-body p-4">
-            <div class="d-sm-flex d-block align-items-center justify-content-between mb-3">
+        </div>
+      </div>
+      <div class="col-xl-8 d-flex">
+        <div class="dash-card w-100">
+          <div class="dash-card-body">
+            <div class="dash-card-head">
               <div>
-                <h5 class="card-title fw-semibold mb-1">Filter Periode</h5>
-                <p class="fs-3 text-muted mb-0">Pilih rentang tanggal untuk melihat omset penjualan dan pembelian.</p>
+                <h5 class="dash-card-title">Transaksi Terbaru</h5>
+                <p class="dash-card-sub">Penjualan dan pembelian terakhir</p>
               </div>
-              <div class="d-flex flex-wrap gap-2 mt-3 mt-sm-0">
-                @foreach ($filterPresets as $preset)
-                  <a href="{{ $preset['url'] }}"
-                    class="btn btn-sm {{ $preset['active'] ? 'btn-primary' : 'btn-outline-primary' }}">{{ $preset['label'] }}</a>
-                @endforeach
-              </div>
+              <a href="{{ route('penjualan.index') }}" class="dash-link">Lihat semua <i class="ti ti-arrow-right"></i></a>
             </div>
-            <div class="row align-items-end g-3">
-              <div class="col-sm-6 col-md-3">
-                <label for="tanggal_mulai" class="form-label">Tanggal mulai</label>
-                <input type="date" class="form-control" id="tanggal_mulai" name="tanggal_mulai" value="{{ $tanggalMulai }}">
-              </div>
-              <div class="col-sm-6 col-md-3">
-                <label for="tanggal_selesai" class="form-label">Tanggal sampai</label>
-                <input type="date" class="form-control" id="tanggal_selesai" name="tanggal_selesai" value="{{ $tanggalSelesai }}"
-                  min="{{ $tanggalMulai }}">
-              </div>
-              <div class="col-sm-6 col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100"><i class="ti ti-filter me-1"></i> Terapkan</button>
-              </div>
-              <div class="col-sm-6 col-md-3 d-flex align-items-end">
-                <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary w-100"><i class="ti ti-refresh me-1"></i> Reset</a>
-              </div>
-            </div>
-          </div>
-        </form>
-
-        <!-- Total penjualan, pembelian, dan stok akhir -->
-        <div class="row">
-          <div class="col-md-6 col-lg-4 d-flex align-items-stretch">
-            <div class="card w-100">
-              <div class="card-body p-4">
-                <div class="d-flex align-items-start justify-content-between">
-                  <div>
-                    <h5 class="card-title fw-semibold mb-2">Total Penjualan</h5>
-                    <h4 class="fw-semibold mb-1">Rp {{ number_format($totalSales, 0, ',', '.') }}</h4>
-                    <p class="fs-3 text-muted mb-0">{{ $periodeLabel }}</p>
-                  </div>
-                  <span class="text-white bg-primary rounded p-3 d-inline-flex"><i class="ti ti-shopping-cart fs-5"></i></span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6 col-lg-4 d-flex align-items-stretch">
-            <div class="card w-100">
-              <div class="card-body p-4">
-                <div class="d-flex align-items-start justify-content-between">
-                  <div>
-                    <h5 class="card-title fw-semibold mb-2">Total Pembelian</h5>
-                    <h4 class="fw-semibold mb-1">Rp {{ number_format($totalPurchases, 0, ',', '.') }}</h4>
-                    <p class="fs-3 text-muted mb-0">{{ $periodeLabel }}</p>
-                  </div>
-                  <span class="text-white bg-danger rounded p-3 d-inline-flex"><i class="ti ti-basket fs-5"></i></span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6 col-lg-4 d-flex align-items-stretch">
-            <div class="card w-100">
-              <div class="card-body p-4">
-                <div class="d-flex align-items-start justify-content-between">
-                  <div>
-                    <h5 class="card-title fw-semibold mb-2">Nilai Stok Akhir</h5>
-                    <h4 class="fw-semibold mb-1">Rp {{ number_format($totalNilaiStok, 0, ',', '.') }}</h4>
-                    <p class="fs-3 text-muted mb-0">{{ $totalItemStok }} item belum terjual · per {{ $stokPerTanggal }}</p>
-                  </div>
-                  <span class="text-white bg-info rounded p-3 d-inline-flex"><i class="ti ti-packages fs-5"></i></span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!--  Row 1 -->
-        <div class="row">
-          <div class="col-lg-8 d-flex align-items-stretch">
-            <div class="card w-100">
-              <div class="card-body">
-                <div class="d-sm-flex d-block align-items-center justify-content-between mb-9">
-                  <div class="mb-3 mb-sm-0">
-                    <h5 class="card-title fw-semibold">{{ $dashboardData['chartTitle'] }}</h5>
-                    <p class="fs-3 text-muted mb-0">{{ $dashboardData['periodeLabel'] }}</p>
-                  </div>
-                </div>
-                <div id="chart"></div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4">
-            <div class="row">
-              <div class="col-lg-12">
-                <!-- Yearly Breakup -->
-                <div class="card overflow-hidden">
-                  <div class="card-body p-4">
-                    <div>
-                      <h5 class="card-title mb-1 fw-semibold">Ringkasan Penjualan</h5>
-                      <p class="fs-3 text-muted mb-9">{{ $dashboardData['periodeLabel'] }}</p>
-                    </div>
-                    <div class="row align-items-center">
-                      <div class="col-8">
-                        <h4 class="fw-semibold mb-3">Rp {{ number_format($dashboardData['yearSales'], 0, ',', '.') }}</h4>
-                        <div class="d-flex align-items-center">
-                          <div class="me-4">
-                            <span class="round-8 bg-primary rounded-circle me-2 d-inline-block"></span>
-                            <span class="fs-2">Modal Rp {{ number_format($dashboardData['yearCost'], 0, ',', '.') }}</span>
-                          </div>
-                          <div>
-                            <span class="round-8 bg-light-primary rounded-circle me-2 d-inline-block"></span>
-                            <span class="fs-2">{{ $dashboardData['yearProfit'] < 0 ? 'Rugi' : 'Laba' }} Rp {{ number_format(abs($dashboardData['yearProfit']), 0, ',', '.') }}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="col-4">
-                        <div class="d-flex justify-content-center">
-                          <div id="breakup"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-12">
-                <!-- Monthly Earnings -->
-                <div class="card">
-                  <div class="card-body">
-                    <div class="row align-items-start">
-                      <div class="col-8">
-                        <h5 class="card-title mb-2 fw-semibold">Laba / Rugi</h5>
-                        <h4 class="fw-semibold mb-3 {{ $dashboardData['monthProfit'] < 0 ? 'text-danger' : 'text-success' }}">Rp {{ number_format($dashboardData['monthProfit'], 0, ',', '.') }}</h4>
-                        <p class="fs-3 mb-0 text-muted">{{ $dashboardData['periodeLabel'] }}</p>
-                      </div>
-                      <div class="col-4">
-                        <div class="d-flex justify-content-end">
-                          <div
-                            class="text-white bg-secondary rounded-circle p-6 d-flex align-items-center justify-content-center">
-                            <i class="ti ti-report-money fs-6"></i>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div id="earning"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Ringkasan omset per toko -->
-        <div class="row">
-          <div class="col-12 d-flex align-items-stretch">
-            <div class="card w-100">
-              <div class="card-body p-4">
-                <div class="d-sm-flex d-block align-items-center justify-content-between mb-4">
-                  <div>
-                    <h5 class="card-title fw-semibold mb-1">Ringkasan Omset per Toko</h5>
-                    <p class="fs-3 text-muted mb-0">Penjualan dan pembelian per toko · {{ $periodeLabel }}</p>
-                  </div>
-                </div>
-                <div class="table-responsive">
-                  <table class="table table-hover align-middle mb-0 dashboard-store-table">
-                    <thead class="text-dark fs-4">
-                      <tr>
-                        <th><h6 class="fw-semibold mb-0">No.</h6></th>
-                        <th><h6 class="fw-semibold mb-0">ID</h6></th>
-                        <th><h6 class="fw-semibold mb-0">Nama Toko</h6></th>
-                        <th class="text-end"><h6 class="fw-semibold mb-0">Penjualan</h6></th>
-                        <th class="text-end"><h6 class="fw-semibold mb-0">Pembelian</h6></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @forelse ($storeSummaries as $store)
-                        <tr>
-                          <td>{{ $loop->iteration }}</td>
-                          <td>{{ $store['id'] }}</td>
-                          <td class="fw-semibold">{{ $store['nama'] }}</td>
-                          <td class="text-end">Rp {{ number_format($store['sales'], 0, ',', '.') }}</td>
-                          <td class="text-end">Rp {{ number_format($store['purchases'], 0, ',', '.') }}</td>
-                        </tr>
-                      @empty
-                        <tr><td colspan="5" class="text-center text-muted py-4">Belum ada toko terdaftar.</td></tr>
-                      @endforelse
-                    </tbody>
-                    <tfoot class="fw-semibold">
-                      <tr class="bg-light">
-                        <td colspan="3">TOTAL SEMUA TOKO</td>
-                        <td class="text-end">Rp {{ number_format($totalSales, 0, ',', '.') }}</td>
-                        <td class="text-end">Rp {{ number_format($totalPurchases, 0, ',', '.') }}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Stok akhir / barang belum terjual -->
-        <div class="row">
-          <div class="col-12 d-flex align-items-stretch">
-            <div class="card w-100">
-              <div class="card-body p-4">
-                <div class="d-sm-flex d-block align-items-center justify-content-between mb-4">
-                  <div>
-                    <h5 class="card-title fw-semibold mb-1">Stok Akhir (Barang Belum Terjual)</h5>
-                    <p class="fs-3 text-muted mb-0">Sisa stok per {{ $stokPerTanggal }} · {{ $totalItemStok }} item</p>
-                  </div>
-                  <a href="{{ route('laporan.stok-akhir') }}" class="text-primary">Lihat semua</a>
-                </div>
-                <div class="table-responsive" style="max-height: 420px;">
-                  <table class="table table-hover align-middle mb-0">
-                    <thead class="text-dark fs-4" style="position: sticky; top: 0; background: #fff; z-index: 1;">
-                      <tr>
-                        <th><h6 class="fw-semibold mb-0">No.</h6></th>
-                        <th><h6 class="fw-semibold mb-0">Nama Barang</h6></th>
-                        <th><h6 class="fw-semibold mb-0">Toko</h6></th>
-                        <th><h6 class="fw-semibold mb-0">Satuan</h6></th>
-                        <th class="text-end"><h6 class="fw-semibold mb-0">Stok Akhir</h6></th>
-                        <th class="text-end"><h6 class="fw-semibold mb-0">Harga Beli</h6></th>
-                        <th class="text-end"><h6 class="fw-semibold mb-0">Nilai Stok</h6></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @forelse ($stokAkhirs as $item)
-                        <tr>
-                          <td>{{ $loop->iteration }}</td>
-                          <td class="fw-semibold">{{ $item['nama'] }}</td>
-                          <td>{{ $item['toko'] }}</td>
-                          <td>{{ $item['satuan'] ?: '-' }}</td>
-                          <td class="text-end">{{ rtrim(rtrim(number_format($item['stok'], 3, ',', '.'), '0'), ',') }}</td>
-                          <td class="text-end">Rp {{ number_format($item['harga_beli'], 0, ',', '.') }}</td>
-                          <td class="text-end fw-semibold">Rp {{ number_format($item['nilai'], 0, ',', '.') }}</td>
-                        </tr>
-                      @empty
-                        <tr><td colspan="7" class="text-center text-muted py-4">Semua barang sudah terjual / belum ada stok.</td></tr>
-                      @endforelse
-                    </tbody>
-                    <tfoot class="fw-semibold">
-                      <tr class="bg-light">
-                        <td colspan="6">TOTAL NILAI STOK AKHIR</td>
-                        <td class="text-end">Rp {{ number_format($totalNilaiStok, 0, ',', '.') }}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-lg-4 d-flex align-items-stretch">
-            <div class="card w-100">
-              <div class="card-body p-4">
-                <div class="mb-4">
-                  <h5 class="card-title fw-semibold">Aktivitas Transaksi</h5>
-                </div>
-                <ul class="timeline-widget mb-0 position-relative mb-n5">
+            <div class="table-responsive">
+              <table class="table dash-table text-nowrap align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>Tgl</th>
+                    <th>Nama Barang</th>
+                    <th>Transaksi</th>
+                    <th class="num">Unit</th>
+                    <th class="num">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
                   @forelse ($recentTransactions as $transaction)
-                    <li class="timeline-item d-flex position-relative overflow-hidden">
-                      <div class="timeline-time text-dark flex-shrink-0 text-end">{{ $transaction['date']->format('d/m') }}</div>
-                      <div class="timeline-badge-wrap d-flex flex-column align-items-center">
-                        <span class="timeline-badge border-2 border border-{{ $transaction['type'] === 'Penjualan' ? 'primary' : 'danger' }} flex-shrink-0 my-8"></span>
-                        @if (!$loop->last)<span class="timeline-badge-border d-block flex-shrink-0"></span>@endif
-                      </div>
-                      <div class="timeline-desc fs-3 text-dark mt-n1">
-                        <span class="fw-semibold">{{ $transaction['type'] }}</span> {{ $transaction['name'] }}
-                        <span class="d-block text-muted">Rp {{ number_format($transaction['amount'], 0, ',', '.') }}</span>
-                      </div>
-                    </li>
+                    <tr>
+                      <td class="muted">{{ $loop->iteration }}</td>
+                      <td>{{ $transaction['date']->format('d/m/Y') }}</td>
+                      <td>
+                        <span class="strong">{{ $transaction['name'] }}</span>@if (filled($transaction['unit'])) <span class="text-muted">({{ $transaction['unit'] }})</span>@endif
+                      </td>
+                      <td><span class="badge {{ $transaction['type'] === 'Penjualan' ? 'bg-primary' : 'bg-danger' }} rounded-pill fw-semibold">{{ $transaction['type'] }}</span></td>
+                      <td class="num">{{ rtrim(rtrim(number_format($transaction['quantity'], 3, ',', '.'), '0'), ',') }}</td>
+                      <td class="num strong">Rp {{ number_format($transaction['amount'], 0, ',', '.') }}</td>
+                    </tr>
                   @empty
-                    <li class="text-muted">Belum ada transaksi.</li>
+                    <tr><td colspan="6" class="text-center text-muted py-4">Belum ada transaksi.</td></tr>
                   @endforelse
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-8 d-flex align-items-stretch">
-            <div class="card w-100">
-              <div class="card-body p-4">
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                  <h5 class="card-title fw-semibold mb-0">Transaksi Terbaru</h5>
-                  <a href="{{ route('penjualan.index') }}" class="text-primary">Lihat semua</a>
-                </div>
-                <div class="table-responsive">
-                  <table class="table table-hover text-nowrap mb-0 align-middle dashboard-transaction-table">
-                    <thead class="text-dark fs-4">
-                      <tr>
-                        <th><h6 class="fw-semibold mb-0">No.</h6></th>
-                        <th><h6 class="fw-semibold mb-0">Tgl</h6></th>
-                        <th><h6 class="fw-semibold mb-0">Nama Barang</h6></th>
-                        <th><h6 class="fw-semibold mb-0">Transaksi</h6></th>
-                        <th class="text-end"><h6 class="fw-semibold mb-0">Unit</h6></th>
-                        <th class="text-end"><h6 class="fw-semibold mb-0">Total</h6></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @forelse ($recentTransactions as $transaction)
-                        <tr>
-                          <td>{{ $loop->iteration }}</td>
-                          <td>{{ $transaction['date']->format('d/m/Y') }}</td>
-                          <td>
-                            <span class="fw-semibold">{{ $transaction['name'] }}</span>@if (filled($transaction['unit'])) <span class="text-muted">({{ $transaction['unit'] }})</span>@endif
-                          </td>
-                          <td><span class="badge {{ $transaction['type'] === 'Penjualan' ? 'bg-primary' : 'bg-danger' }} rounded-pill fw-semibold">{{ $transaction['type'] }}</span></td>
-                          <td class="text-end">{{ rtrim(rtrim(number_format($transaction['quantity'], 3, ',', '.'), '0'), ',') }}</td>
-                          <td class="text-end"><h6 class="fw-semibold mb-0 fs-4">Rp {{ number_format($transaction['amount'], 0, ',', '.') }}</h6></td>
-                        </tr>
-                      @empty
-                        <tr><td colspan="6" class="text-center text-muted py-4">Belum ada transaksi.</td></tr>
-                      @endforelse
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <script src="{{ asset('assets/libs/jquery/dist/jquery.min.js') }}"></script>
-  <script src="{{ asset('assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js') }}"></script>
-  <script src="{{ asset('assets/js/sidebarmenu.js') }}"></script>
-  <script src="{{ asset('assets/js/app.min.js') }}"></script>
+@endsection
+
+@push('scripts')
   <script src="{{ asset('assets/libs/apexcharts/dist/apexcharts.min.js') }}"></script>
-  <script src="{{ asset('assets/libs/simplebar/dist/simplebar.js') }}"></script>
   <script>window.dashboardData = @json($dashboardData);</script>
   <script src="{{ asset('assets/js/dashboard.js') }}?v={{ filemtime(public_path('assets/js/dashboard.js')) }}"></script>
-</body>
-
-</html>
+@endpush

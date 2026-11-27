@@ -1,0 +1,523 @@
+.bmt-dashboard {
+  --dash-ink: #172a21;
+  --dash-muted: #6c7d73;
+  --dash-border: #e2eae4;
+  --dash-surface: #fff;
+  --dash-surface-muted: #f7faf8;
+  --dash-accent: #16834a;
+  --dash-accent-soft: #e7f5ec;
+  --dash-danger: #b84035;
+  --dash-danger-soft: #fdeeec;
+  --dash-blue: #3d7a96;
+  --dash-blue-soft: #eaf3f7;
+  --dash-radius: 16px;
+  color: var(--dash-ink);
+}
+
+/* Toolbar periode */
+.bmt-dashboard .dash-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  box-shadow: 0 1px 2px rgb(16 40 28 / 4%);
+}
+
+.bmt-dashboard .dash-toolbar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+
+.bmt-dashboard .dash-toolbar-eyebrow {
+  color: var(--dash-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bmt-dashboard .dash-toolbar-period {
+  margin-top: 3px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.bmt-dashboard .dash-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bmt-dashboard .dash-preset {
+  padding: 6px 12px;
+  border: 1px solid var(--dash-border);
+  border-radius: 999px;
+  background: var(--dash-surface);
+  color: #4e6257;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.bmt-dashboard .dash-preset:hover {
+  border-color: var(--dash-accent);
+  color: var(--dash-accent);
+}
+
+.bmt-dashboard .dash-preset.is-active {
+  border-color: var(--dash-accent);
+  background: var(--dash-accent);
+  color: #fff;
+}
+
+.bmt-dashboard .dash-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.bmt-dashboard .dash-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bmt-dashboard .dash-filter-field label {
+  color: var(--dash-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.bmt-dashboard .dash-filter .form-control {
+  width: 156px;
+  height: 38px;
+  border-color: var(--dash-border);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.bmt-dashboard .dash-filter .form-control:focus {
+  border-color: var(--dash-accent);
+  box-shadow: 0 0 0 3px rgb(22 131 74 / 12%);
+}
+
+.bmt-dashboard .dash-filter .btn {
+  height: 38px;
+  padding-inline: 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Kartu KPI */
+.bmt-dashboard .dash-kpi {
+  --kpi-accent: var(--dash-accent);
+  --kpi-soft: var(--dash-accent-soft);
+  position: relative;
+  height: 100%;
+  padding: 20px;
+  overflow: hidden;
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  box-shadow: 0 1px 2px rgb(16 40 28 / 4%);
+}
+
+.bmt-dashboard .dash-kpi::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--kpi-accent);
+  content: "";
+}
+
+.bmt-dashboard .dash-kpi--purchases {
+  --kpi-accent: #c05a4f;
+  --kpi-soft: var(--dash-danger-soft);
+}
+
+.bmt-dashboard .dash-kpi--stock {
+  --kpi-accent: var(--dash-blue);
+  --kpi-soft: var(--dash-blue-soft);
+}
+
+.bmt-dashboard .dash-kpi-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bmt-dashboard .dash-kpi-label {
+  color: var(--dash-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bmt-dashboard .dash-kpi-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 10px;
+  background: var(--kpi-soft, var(--dash-accent-soft));
+  color: var(--kpi-accent, var(--dash-accent));
+  font-size: 17px;
+}
+
+.bmt-dashboard .dash-kpi-icon--danger {
+  --kpi-accent: var(--dash-danger);
+  --kpi-soft: var(--dash-danger-soft);
+}
+
+.bmt-dashboard .dash-kpi-value {
+  margin-top: 14px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.bmt-dashboard .dash-kpi-value.is-negative {
+  color: var(--dash-danger);
+}
+
+.bmt-dashboard .dash-kpi-foot {
+  margin-top: 6px;
+  color: var(--dash-muted);
+  font-size: 12px;
+}
+
+/* Kartu umum */
+.bmt-dashboard .dash-card {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  box-shadow: 0 1px 2px rgb(16 40 28 / 4%);
+}
+
+.bmt-dashboard .dash-card-body {
+  padding: 20px;
+}
+
+.bmt-dashboard .dash-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.bmt-dashboard .dash-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.bmt-dashboard .dash-card-sub {
+  margin: 4px 0 0;
+  color: var(--dash-muted);
+  font-size: 12px;
+}
+
+.bmt-dashboard .dash-chip {
+  flex: 0 0 auto;
+  padding: 4px 9px;
+  border: 1px solid var(--dash-border);
+  border-radius: 999px;
+  background: var(--dash-surface-muted);
+  color: var(--dash-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bmt-dashboard .dash-link {
+  flex: 0 0 auto;
+  color: var(--dash-accent);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.bmt-dashboard .dash-link:hover {
+  color: #105f35;
+}
+
+.bmt-dashboard .dash-card-head--stock {
+  flex-wrap: wrap;
+}
+
+.bmt-dashboard .dash-stock-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.bmt-dashboard .dash-search {
+  position: relative;
+  flex: 0 1 260px;
+}
+
+.bmt-dashboard .dash-search > .ti {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  color: var(--dash-muted);
+  font-size: 16px;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.bmt-dashboard .dash-search .form-control {
+  width: 100%;
+  height: 38px;
+  padding-left: 36px;
+  border-color: var(--dash-border);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.bmt-dashboard .dash-search .form-control:focus {
+  border-color: var(--dash-accent);
+  box-shadow: 0 0 0 3px rgb(22 131 74 / 12%);
+}
+
+.bmt-dashboard .dash-search .form-control::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+/* Grafik */
+.bmt-dashboard .dash-chart-card .dash-card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.bmt-dashboard .dash-chart-card #chart {
+  flex: 1 1 auto;
+  min-height: 300px;
+}
+
+.bmt-dashboard .dash-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bmt-dashboard .dash-summary-value {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.bmt-dashboard .dash-summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 10px;
+  color: var(--dash-muted);
+  font-size: 12px;
+}
+
+.bmt-dashboard .dash-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+.bmt-dashboard .dash-dot--sales {
+  background: var(--dash-accent);
+}
+
+.bmt-dashboard .dash-dot--profit {
+  background: #8fca9f;
+}
+
+/* Tabel */
+.bmt-dashboard .dash-table {
+  margin-bottom: 0;
+}
+
+.bmt-dashboard .dash-table > :not(caption) > * > * {
+  padding: 11px 14px;
+  border-bottom-color: #edf2ee;
+}
+
+.bmt-dashboard .dash-table thead th {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--dash-border);
+  background: var(--dash-surface-muted);
+  color: var(--dash-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.bmt-dashboard .dash-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.bmt-dashboard .dash-table tbody tr:hover {
+  background: #f8fbf9;
+}
+
+.bmt-dashboard .dash-table tbody tr[hidden] {
+  display: none;
+}
+
+.bmt-dashboard .dash-table tbody td {
+  color: var(--dash-ink);
+  font-size: 13px;
+}
+
+.bmt-dashboard .dash-table tfoot td {
+  border-top: 1px solid var(--dash-border);
+  background: #f4f9f5;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bmt-dashboard .dash-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bmt-dashboard .dash-table .muted {
+  color: var(--dash-muted);
+}
+
+.bmt-dashboard .dash-table .strong {
+  font-weight: 600;
+}
+
+.bmt-dashboard .dash-stock-scroll {
+  max-height: 380px;
+  overflow: auto;
+  border: 1px solid var(--dash-border);
+  border-radius: 12px;
+}
+
+.bmt-dashboard .dash-stock-scroll .dash-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.bmt-dashboard .dash-stock-scroll .dash-table tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+/* Timeline transaksi */
+.bmt-dashboard .timeline-widget {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bmt-dashboard .timeline-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #edf2ee;
+}
+
+.bmt-dashboard .timeline-item:last-child {
+  border-bottom: 0;
+}
+
+.bmt-dashboard .timeline-time {
+  width: 46px;
+  color: var(--dash-muted);
+  font-size: 12px;
+}
+
+.bmt-dashboard .timeline-desc {
+  font-size: 13px;
+}
+
+.bmt-dashboard .timeline-badge {
+  width: 9px;
+  height: 9px;
+}
+
+.bmt-dashboard .timeline-badge-border {
+  width: 2px;
+  background: #e2eae4;
+}
+
+@media (min-width: 1200px) and (max-width: 1399.98px) {
+  .bmt-dashboard .dash-summary {
+    flex-wrap: wrap;
+  }
+
+  .bmt-dashboard .dash-summary #breakup {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 1199.98px) {
+  .bmt-dashboard .dash-toolbar {
+    align-items: stretch;
+  }
+
+  .bmt-dashboard .dash-filter {
+    width: 100%;
+  }
+
+  .bmt-dashboard .dash-filter-field {
+    flex: 1 1 160px;
+  }
+
+  .bmt-dashboard .dash-filter .form-control {
+    width: 100%;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .bmt-dashboard .dash-toolbar,
+  .bmt-dashboard .dash-card-body {
+    padding: 16px;
+  }
+
+  .bmt-dashboard .dash-filter-field,
+  .bmt-dashboard .dash-filter .form-control,
+  .bmt-dashboard .dash-filter .btn,
+  .bmt-dashboard .dash-stock-tools,
+  .bmt-dashboard .dash-search {
+    width: 100%;
+  }
+
+  .bmt-dashboard .dash-kpi-value,
+  .bmt-dashboard .dash-summary-value {
+    font-size: 20px;
+  }
+}
