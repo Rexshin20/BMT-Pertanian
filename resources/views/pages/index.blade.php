@@ -315,6 +315,7 @@
 @endsection
 
 @push('scripts')
+  <script>{!! file_get_contents(public_path('assets/js/dashboard-search.js')) !!}</script>
   <script src="{{ asset('assets/libs/apexcharts/dist/apexcharts.min.js') }}"></script>
   <script>window.dashboardData = @json($dashboardData);</script>
   <script src="{{ asset('assets/js/dashboard.js') }}?v={{ filemtime(public_path('assets/js/dashboard.js')) }}"></script>
