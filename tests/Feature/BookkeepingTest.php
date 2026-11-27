@@ -734,11 +734,11 @@ class BookkeepingTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('Penjualan & Pembelian Harian', false)
+            ->assertSee('Penjualan & Pembelian per Hari')
             ->assertSee('Ringkasan Penjualan')
             ->assertSee('border-danger', false)
             ->assertSee('bg-danger', false)
-            ->assertSee('Laba / Rugi Bulan Ini')
+            ->assertSee('Laba / Rugi')
             ->assertSee('Barang Dashboard')
             ->assertSee('(per pcs)')
             ->assertSee('Unit')
@@ -752,7 +752,13 @@ class BookkeepingTest extends TestCase
             ->assertSee('dashboardData')
             ->assertDontSee('John Doe')
             ->assertDontSee('Boat Headphone')
-            ->assertDontSee('$36,358');
+            ->assertDontSee('$36,358')
+            ->assertSee('Total Penjualan')
+            ->assertSee('Total Pembelian')
+            ->assertDontSee('ti ti-building-store')
+            ->assertSee('Ringkasan Omset per Toko')
+            ->assertSee('TOTAL SEMUA TOKO')
+            ->assertDontSee('Total (Penjualan - Pembelian)');
 
         $dashboardData = $response->viewData('dashboardData');
         $lastChartPoint = count($dashboardData['sales']) - 1;

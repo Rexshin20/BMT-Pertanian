@@ -3,48 +3,151 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pembelian;
+use App\Models\Pemilik;
 use App\Models\Penjualan;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $today = now()->startOfDay();
-        $monthStart = $today->copy()->startOfMonth();
-        $yearStart = $today->copy()->startOfYear();
+        $filters = $request->validate([
+            'tanggal_mulai' => ['nullable', 'date_format:Y-m-d'],
+            'tanggal_selesai' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:tanggal_mulai'],
+        ]);
+
+        $today = Carbon::today();
+        $tanggalMulai = Carbon::parse(($filters['tanggal_mulai'] ?? null) ?: $today->copy()->startOfMonth()->toDateString())->startOfDay();
+        $tanggalSelesai = Carbon::parse(($filters['tanggal_selesai'] ?? null) ?: $today->toDateString())->startOfDay();
+        $dateFrom = $tanggalMulai->toDateString();
+        $dateTo = $tanggalSelesai->toDateString();
+
+        $periodeLabel = $tanggalMulai->copy()->locale('id')->translatedFormat('d M Y')
+            .' – '.$tanggalSelesai->copy()->locale('id')->translatedFormat('d M Y');
 
         $salesByDate = Penjualan::query()
-            ->whereBetween('tanggal', [$yearStart->toDateString(), $today->toDateString()])
+            ->whereBetween('tanggal', [$dateFrom, $dateTo])
             ->selectRaw('tanggal, SUM(total_harga_jual) AS total_sales, SUM(total_harga_beli) AS total_cost, SUM(laba) AS total_profit')
             ->groupBy('tanggal')
             ->get()
             ->keyBy(fn (Penjualan $transaction) => $transaction->tanggal->toDateString());
         $dailyPurchases = Pembelian::query()
-            ->whereBetween('tanggal', [$monthStart->toDateString(), $today->toDateString()])
+            ->whereBetween('tanggal', [$dateFrom, $dateTo])
             ->selectRaw('tanggal, SUM(total_harga) AS total')
             ->groupBy('tanggal')
             ->pluck('total', 'tanggal');
 
+        // Rentang panjang dikelompokkan per bulan agar grafik tetap terbaca.
+        $groupByMonth = $tanggalMulai->diffInDays($tanggalSelesai) > 62;
         $chartDates = collect();
         $chartSales = [];
         $chartPurchases = [];
         $chartProfit = [];
 
-        for ($date = $monthStart->copy(); $date->lte($today); $date->addDay()) {
-            $key = $date->toDateString();
-            $chartDates->push($date->format('d/m'));
-            $chartSales[] = (float) ($salesByDate[$key]->total_sales ?? 0);
-            $chartPurchases[] = (float) ($dailyPurchases[$key] ?? 0);
-            $chartProfit[] = (float) ($salesByDate[$key]->total_profit ?? 0);
+        if ($groupByMonth) {
+            for ($cursor = $tanggalMulai->copy()->startOfMonth(); $cursor->lte($tanggalSelesai); $cursor->addMonth()) {
+                $monthKey = $cursor->format('Y-m');
+                $salesInMonth = $salesByDate->filter(fn ($row, $date) => str_starts_with((string) $date, $monthKey));
+                $purchasesInMonth = $dailyPurchases->filter(fn ($total, $date) => str_starts_with((string) $date, $monthKey));
+
+                $chartDates->push($cursor->copy()->locale('id')->translatedFormat('M Y'));
+                $chartSales[] = (float) $salesInMonth->sum('total_sales');
+                $chartPurchases[] = (float) $purchasesInMonth->sum();
+                $chartProfit[] = (float) $salesInMonth->sum('total_profit');
+            }
+        } else {
+            for ($date = $tanggalMulai->copy(); $date->lte($tanggalSelesai); $date->addDay()) {
+                $key = $date->toDateString();
+                $chartDates->push($date->format('d/m'));
+                $chartSales[] = (float) ($salesByDate[$key]->total_sales ?? 0);
+                $chartPurchases[] = (float) ($dailyPurchases[$key] ?? 0);
+                $chartProfit[] = (float) ($salesByDate[$key]->total_profit ?? 0);
+            }
         }
 
-        $yearSales = (float) $salesByDate->sum('total_sales');
-        $yearCost = (float) $salesByDate->sum('total_cost');
-        $yearProfit = (float) $salesByDate->sum('total_profit');
+        $totalSales = (float) $salesByDate->sum('total_sales');
+        $totalCost = (float) $salesByDate->sum('total_cost');
+        $totalPurchases = (float) $dailyPurchases->sum();
+        $totalProfit = (float) $salesByDate->sum('total_profit');
+
+        $salesByOwner = Penjualan::query()
+            ->join('produks', 'penjuwalans.produk_id', '=', 'produks.id')
+            ->whereBetween('penjuwalans.tanggal', [$dateFrom, $dateTo])
+            ->selectRaw('produks.pemilik_id, SUM(penjuwalans.total_harga_jual) AS total_sales')
+            ->groupBy('produks.pemilik_id')
+            ->pluck('total_sales', 'pemilik_id');
+        $purchasesByOwner = Pembelian::query()
+            ->join('produks', 'pembelians.produk_id', '=', 'produks.id')
+            ->whereBetween('pembelians.tanggal', [$dateFrom, $dateTo])
+            ->selectRaw('produks.pemilik_id, SUM(pembelians.total_harga) AS total_purchases')
+            ->groupBy('produks.pemilik_id')
+            ->pluck('total_purchases', 'pemilik_id');
+
+        $unassignedSales = (float) Penjualan::query()
+            ->join('produks', 'penjuwalans.produk_id', '=', 'produks.id')
+            ->whereNull('produks.pemilik_id')
+            ->whereBetween('penjuwalans.tanggal', [$dateFrom, $dateTo])
+            ->sum('penjuwalans.total_harga_jual');
+        $unassignedPurchases = (float) Pembelian::query()
+            ->join('produks', 'pembelians.produk_id', '=', 'produks.id')
+            ->whereNull('produks.pemilik_id')
+            ->whereBetween('pembelians.tanggal', [$dateFrom, $dateTo])
+            ->sum('pembelians.total_harga');
+
+        $storeRows = Pemilik::query()
+            ->orderByRaw('CAST(kode AS DECIMAL(20, 0))')
+            ->get()
+            ->map(fn (Pemilik $pemilik) => [
+                'id' => $pemilik->id_tampilan,
+                'nama' => $pemilik->nama,
+                'sales' => (float) ($salesByOwner[$pemilik->id] ?? 0),
+                'purchases' => (float) ($purchasesByOwner[$pemilik->id] ?? 0),
+            ]);
+
+        if ($unassignedSales > 0 || $unassignedPurchases > 0) {
+            $storeRows->push([
+                'id' => '-',
+                'nama' => 'Tanpa pemilik',
+                'sales' => $unassignedSales,
+                'purchases' => $unassignedPurchases,
+            ]);
+        }
+
+        $storeSummaries = $storeRows
+            ->sortByDesc('sales')
+            ->values()
+            ->all();
+
+        $earliestTransaction = collect([
+            Penjualan::query()->min('tanggal'),
+            Pembelian::query()->min('tanggal'),
+        ])->filter()->sort()->first() ?? $today->toDateString();
+        $monthStart = $today->copy()->startOfMonth()->toDateString();
+        $yearStart = $today->copy()->startOfYear()->toDateString();
+
+        $filterPresets = [
+            [
+                'label' => 'Bulan ini',
+                'url' => route('dashboard'),
+                'active' => $dateFrom === $monthStart && $dateTo === $today->toDateString(),
+            ],
+            [
+                'label' => 'Tahun ini',
+                'url' => route('dashboard', ['tanggal_mulai' => $yearStart, 'tanggal_selesai' => $today->toDateString()]),
+                'active' => $dateFrom === $yearStart && $dateTo === $today->toDateString(),
+            ],
+            [
+                'label' => 'Semua data',
+                'url' => route('dashboard', ['tanggal_mulai' => $earliestTransaction, 'tanggal_selesai' => $today->toDateString()]),
+                'active' => $dateFrom === $earliestTransaction && $dateTo === $today->toDateString(),
+            ],
+        ];
 
         $sales = Penjualan::query()
             ->with('produk')
+            ->whereBetween('tanggal', [$dateFrom, $dateTo])
             ->latest('tanggal')
             ->latest('id')
             ->limit(8)
@@ -61,6 +164,7 @@ class DashboardController extends Controller
             ]);
         $purchases = Pembelian::query()
             ->with('produk')
+            ->whereBetween('tanggal', [$dateFrom, $dateTo])
             ->latest('tanggal')
             ->latest('id')
             ->limit(8)
@@ -83,12 +187,21 @@ class DashboardController extends Controller
                 'purchases' => $chartPurchases,
                 'profit' => $chartProfit,
                 'year' => $today->year,
-                'yearSales' => $yearSales,
-                'yearCost' => $yearCost,
-                'yearProfit' => $yearProfit,
+                'yearSales' => $totalSales,
+                'yearCost' => $totalCost,
+                'yearProfit' => $totalProfit,
                 'monthProfit' => array_sum($chartProfit),
-                'monthName' => $today->locale('id')->translatedFormat('F Y'),
+                'monthName' => $periodeLabel,
+                'periodeLabel' => $periodeLabel,
+                'chartTitle' => $groupByMonth ? 'Penjualan & Pembelian per Bulan' : 'Penjualan & Pembelian per Hari',
             ],
+            'periodeLabel' => $periodeLabel,
+            'tanggalMulai' => $dateFrom,
+            'tanggalSelesai' => $dateTo,
+            'filterPresets' => $filterPresets,
+            'totalSales' => $totalSales,
+            'totalPurchases' => $totalPurchases,
+            'storeSummaries' => $storeSummaries,
             'recentTransactions' => $sales
                 ->concat($purchases)
                 ->sortByDesc(fn (array $transaction) => $transaction['created_at']?->timestamp ?? 0)

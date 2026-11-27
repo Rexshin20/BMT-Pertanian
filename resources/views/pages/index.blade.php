@@ -150,6 +150,72 @@
       </header>
       <!--  Header End -->
       <div class="container-fluid app-content-with-footer">
+        <!-- Filter periode -->
+        <form method="GET" action="{{ route('dashboard') }}" class="card mb-4">
+          <div class="card-body p-4">
+            <div class="d-sm-flex d-block align-items-center justify-content-between mb-3">
+              <div>
+                <h5 class="card-title fw-semibold mb-1">Filter Periode</h5>
+                <p class="fs-3 text-muted mb-0">Pilih rentang tanggal untuk melihat omset penjualan dan pembelian.</p>
+              </div>
+              <div class="d-flex flex-wrap gap-2 mt-3 mt-sm-0">
+                @foreach ($filterPresets as $preset)
+                  <a href="{{ $preset['url'] }}"
+                    class="btn btn-sm {{ $preset['active'] ? 'btn-primary' : 'btn-outline-primary' }}">{{ $preset['label'] }}</a>
+                @endforeach
+              </div>
+            </div>
+            <div class="row align-items-end g-3">
+              <div class="col-sm-6 col-md-3">
+                <label for="tanggal_mulai" class="form-label">Tanggal mulai</label>
+                <input type="date" class="form-control" id="tanggal_mulai" name="tanggal_mulai" value="{{ $tanggalMulai }}">
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <label for="tanggal_selesai" class="form-label">Tanggal sampai</label>
+                <input type="date" class="form-control" id="tanggal_selesai" name="tanggal_selesai" value="{{ $tanggalSelesai }}"
+                  min="{{ $tanggalMulai }}">
+              </div>
+              <div class="col-sm-6 col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100"><i class="ti ti-filter me-1"></i> Terapkan</button>
+              </div>
+              <div class="col-sm-6 col-md-3 d-flex align-items-end">
+                <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary w-100"><i class="ti ti-refresh me-1"></i> Reset</a>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <!-- Total penjualan dan pembelian -->
+        <div class="row">
+          <div class="col-md-6 d-flex align-items-stretch">
+            <div class="card w-100">
+              <div class="card-body p-4">
+                <div class="d-flex align-items-start justify-content-between">
+                  <div>
+                    <h5 class="card-title fw-semibold mb-2">Total Penjualan</h5>
+                    <h4 class="fw-semibold mb-1">Rp {{ number_format($totalSales, 0, ',', '.') }}</h4>
+                    <p class="fs-3 text-muted mb-0">{{ $periodeLabel }}</p>
+                  </div>
+                  <span class="text-white bg-primary rounded p-3 d-inline-flex"><i class="ti ti-shopping-cart fs-5"></i></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 d-flex align-items-stretch">
+            <div class="card w-100">
+              <div class="card-body p-4">
+                <div class="d-flex align-items-start justify-content-between">
+                  <div>
+                    <h5 class="card-title fw-semibold mb-2">Total Pembelian</h5>
+                    <h4 class="fw-semibold mb-1">Rp {{ number_format($totalPurchases, 0, ',', '.') }}</h4>
+                    <p class="fs-3 text-muted mb-0">{{ $periodeLabel }}</p>
+                  </div>
+                  <span class="text-white bg-danger rounded p-3 d-inline-flex"><i class="ti ti-basket fs-5"></i></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <!--  Row 1 -->
         <div class="row">
           <div class="col-lg-8 d-flex align-items-stretch">
@@ -157,9 +223,9 @@
               <div class="card-body">
                 <div class="d-sm-flex d-block align-items-center justify-content-between mb-9">
                   <div class="mb-3 mb-sm-0">
-                    <h5 class="card-title fw-semibold">Penjualan & Pembelian Harian</h5>
+                    <h5 class="card-title fw-semibold">{{ $dashboardData['chartTitle'] }}</h5>
+                    <p class="fs-3 text-muted mb-0">{{ $dashboardData['periodeLabel'] }}</p>
                   </div>
-                  <span class="text-muted">{{ $dashboardData['monthName'] }}</span>
                 </div>
                 <div id="chart"></div>
               </div>
@@ -171,7 +237,10 @@
                 <!-- Yearly Breakup -->
                 <div class="card overflow-hidden">
                   <div class="card-body p-4">
-                    <h5 class="card-title mb-9 fw-semibold">Ringkasan Penjualan {{ $dashboardData['year'] }}</h5>
+                    <div>
+                      <h5 class="card-title mb-1 fw-semibold">Ringkasan Penjualan</h5>
+                      <p class="fs-3 text-muted mb-9">{{ $dashboardData['periodeLabel'] }}</p>
+                    </div>
                     <div class="row align-items-center">
                       <div class="col-8">
                         <h4 class="fw-semibold mb-3">Rp {{ number_format($dashboardData['yearSales'], 0, ',', '.') }}</h4>
@@ -201,9 +270,9 @@
                   <div class="card-body">
                     <div class="row align-items-start">
                       <div class="col-8">
-                        <h5 class="card-title mb-9 fw-semibold">Laba / Rugi Bulan Ini</h5>
+                        <h5 class="card-title mb-2 fw-semibold">Laba / Rugi</h5>
                         <h4 class="fw-semibold mb-3 {{ $dashboardData['monthProfit'] < 0 ? 'text-danger' : 'text-success' }}">Rp {{ number_format($dashboardData['monthProfit'], 0, ',', '.') }}</h4>
-                        <p class="fs-3 mb-0 text-muted">{{ $dashboardData['monthName'] }}</p>
+                        <p class="fs-3 mb-0 text-muted">{{ $dashboardData['periodeLabel'] }}</p>
                       </div>
                       <div class="col-4">
                         <div class="d-flex justify-content-end">
@@ -216,6 +285,54 @@
                     </div>
                   </div>
                   <div id="earning"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Ringkasan omset per toko -->
+        <div class="row">
+          <div class="col-12 d-flex align-items-stretch">
+            <div class="card w-100">
+              <div class="card-body p-4">
+                <div class="d-sm-flex d-block align-items-center justify-content-between mb-4">
+                  <div>
+                    <h5 class="card-title fw-semibold mb-1">Ringkasan Omset per Toko</h5>
+                    <p class="fs-3 text-muted mb-0">Penjualan dan pembelian per toko · {{ $periodeLabel }}</p>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0 dashboard-store-table">
+                    <thead class="text-dark fs-4">
+                      <tr>
+                        <th><h6 class="fw-semibold mb-0">No.</h6></th>
+                        <th><h6 class="fw-semibold mb-0">ID</h6></th>
+                        <th><h6 class="fw-semibold mb-0">Nama Toko</h6></th>
+                        <th class="text-end"><h6 class="fw-semibold mb-0">Penjualan</h6></th>
+                        <th class="text-end"><h6 class="fw-semibold mb-0">Pembelian</h6></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @forelse ($storeSummaries as $store)
+                        <tr>
+                          <td>{{ $loop->iteration }}</td>
+                          <td>{{ $store['id'] }}</td>
+                          <td class="fw-semibold">{{ $store['nama'] }}</td>
+                          <td class="text-end">Rp {{ number_format($store['sales'], 0, ',', '.') }}</td>
+                          <td class="text-end">Rp {{ number_format($store['purchases'], 0, ',', '.') }}</td>
+                        </tr>
+                      @empty
+                        <tr><td colspan="5" class="text-center text-muted py-4">Belum ada toko terdaftar.</td></tr>
+                      @endforelse
+                    </tbody>
+                    <tfoot class="fw-semibold">
+                      <tr class="bg-light">
+                        <td colspan="3">TOTAL SEMUA TOKO</td>
+                        <td class="text-end">Rp {{ number_format($totalSales, 0, ',', '.') }}</td>
+                        <td class="text-end">Rp {{ number_format($totalPurchases, 0, ',', '.') }}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
               </div>
             </div>
