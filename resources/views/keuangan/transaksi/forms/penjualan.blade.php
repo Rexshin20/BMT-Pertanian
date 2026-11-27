@@ -1,4 +1,4 @@
-@push('styles')
+                       @push('styles')
 <link rel="stylesheet" href="{{ asset('assets/libs/select2/select2.min.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/libs/select2/select2-bootstrap-5-theme.min.css') }}">
 <style>

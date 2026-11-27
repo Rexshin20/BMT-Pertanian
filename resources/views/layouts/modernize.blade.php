@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>@yield('title', 'Koperasi Konsumen Cinde Barokah Sejahtera') - Koperasi Konsumen Cinde Barokah Sejahtera</title>
   <link rel="shortcut icon" type="image/png" href="{{ asset('assets/images/logos/bmt-cinde-barokah.png') }}">
-  <link rel="stylesheet" href="{{ asset('assets/css/styles.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('assets/css/styles.min.css') }}?v={{ filemtime(public_path('assets/css/styles.min.css')) }}">
   <link rel="stylesheet" href="{{ asset('assets/css/bmt-theme.css') }}?v={{ filemtime(public_path('assets/css/bmt-theme.css')) }}">
   @stack('styles')
 </head>

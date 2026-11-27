@@ -4,7 +4,7 @@
 @section('page-title', 'Dashboard')
 
 @push('styles')
-  <link rel="stylesheet" href="{{ asset('assets/css/dashboard.css') }}?v={{ filemtime(public_path('assets/css/dashboard.css')) }}">
+  <style>{!! file_get_contents(public_path('assets/css/dashboard.css')) !!}</style>
 @endpush
 
 @section('content')
