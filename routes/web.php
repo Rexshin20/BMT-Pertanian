@@ -60,4 +60,5 @@ Route::middleware('auth')->group(function () {
     Route::get('/laporan/laba-rugi', [LaporanLabaRugiController::class, 'index'])->name('laporan.laba-rugi');
     Route::get('/laporan/stok-akhir', [LaporanStokAkhirController::class, 'index'])->name('laporan.stok-akhir');
     Route::put('/laporan/stok-akhir/{produk}/koreksi-stok', [LaporanStokAkhirController::class, 'koreksiStok'])->name('laporan.stok-akhir.koreksi');
+    Route::delete('/laporan/stok-akhir/{produk}', [LaporanStokAkhirController::class, 'destroy'])->name('laporan.stok-akhir.destroy');
 });

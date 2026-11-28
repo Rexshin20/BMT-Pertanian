@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class LaporanStokAkhirController extends Controller
@@ -127,6 +128,17 @@ class LaporanStokAkhirController extends Controller
         $stokTampil = rtrim(rtrim(number_format((float) $produk->stok, 3, ',', '.'), '0'), ',');
 
         return back()->with('success', 'Stok '.$produk->nama.' dikoreksi menjadi '.$stokTampil.'.');
+    }
+
+    public function destroy(Produk $produk): RedirectResponse
+    {
+        DB::transaction(function () use ($produk): void {
+            Penjualan::query()->where('produk_id', $produk->id)->delete();
+            Pembelian::query()->where('produk_id', $produk->id)->delete();
+            $produk->delete();
+        });
+
+        return back()->with('success', 'Barang dan seluruh transaksi terkait berhasil dihapus.');
     }
 
     /**

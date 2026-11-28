@@ -106,6 +106,42 @@ class LaporanStokAkhirTest extends TestCase
         $this->assertSame('5', rtrim(rtrim(number_format((float) $laporan->stok_akhir, 3, ',', '.'), '0'), ','));
     }
 
+    public function test_stok_akhir_can_delete_product_and_related_transactions(): void
+    {
+        $lastCode = (int) Pemilik::query()
+            ->selectRaw('MAX(CAST(kode AS DECIMAL(20, 0))) AS kode_terakhir')
+            ->value('kode_terakhir');
+        $kode = str_pad((string) ($lastCode + 1), 3, '0', STR_PAD_LEFT);
+
+        $pemilik = Pemilik::query()->create(['kode' => $kode, 'nama' => 'Budi']);
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $kode,
+            'nama_barang' => 'Kopi',
+            'tanggal' => '2026-10-01',
+            'satuan' => 'pcs',
+            'jumlah' => '10',
+            'harga_beli' => '100',
+        ])->assertRedirect(route('pembelian.create.list'));
+
+        $produk = Produk::query()->where('pemilik_id', $pemilik->id)->firstOrFail();
+        $this->createPenjualan($produk, '2026-10-05', 2);
+
+        $url = route('laporan.stok-akhir', ['pemilik' => $kode]);
+        $this->get($url)
+            ->assertOk()
+            ->assertSee('Hapus')
+            ->assertSee(route('laporan.stok-akhir.destroy', $produk));
+
+        $this->from($url)
+            ->delete(route('laporan.stok-akhir.destroy', $produk))
+            ->assertRedirect($url)
+            ->assertSessionHas('success', 'Barang dan seluruh transaksi terkait berhasil dihapus.');
+
+        $this->assertDatabaseMissing('produks', ['id' => $produk->id]);
+        $this->assertDatabaseMissing('pembelians', ['produk_id' => $produk->id]);
+        $this->assertDatabaseMissing('penjuwalans', ['produk_id' => $produk->id]);
+    }
+
     public function test_berat_bersih_diambil_dari_satuan_bila_nama_barang_tidak_memuat_ukuran(): void
     {
         $lastCode = (int) Pemilik::query()

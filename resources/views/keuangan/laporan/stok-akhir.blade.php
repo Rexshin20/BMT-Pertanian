@@ -76,7 +76,7 @@
             <th class="text-end" style="width: 130px;">Stok Akhir</th>
             <th style="min-width: 140px;">Keterangan</th>
             @if ($pemilikTerpilih)
-              <th class="text-center" style="width: 90px;">Aksi</th>
+              <th class="text-center" style="width: 160px;">Aksi</th>
             @endif
           </tr>
         </thead>
@@ -93,10 +93,18 @@
               @if ($pemilikTerpilih)
                 <td class="text-center">
                   @if (isset($laporan->produk))
-                    <button type="button" class="btn btn-sm btn-outline-primary btn-koreksi-stok"
-                      data-action="{{ route('laporan.stok-akhir.koreksi', $laporan->produk->id) }}"
-                      data-nama="{{ $laporan->nama_barang }}{{ $laporan->berat_bersih ? ' '.$laporan->berat_bersih : '' }}"
-                      data-stok="{{ (float) $laporan->produk->stok }}">Koreksi</button>
+                    <div class="d-flex justify-content-center gap-1">
+                      <button type="button" class="btn btn-sm btn-outline-primary btn-koreksi-stok"
+                        data-action="{{ route('laporan.stok-akhir.koreksi', $laporan->produk->id) }}"
+                        data-nama="{{ $laporan->nama_barang }}{{ $laporan->berat_bersih ? ' '.$laporan->berat_bersih : '' }}"
+                        data-stok="{{ (float) $laporan->produk->stok }}">Koreksi</button>
+                      <form method="POST" action="{{ route('laporan.stok-akhir.destroy', $laporan->produk->id) }}"
+                        onsubmit="return confirm('Hapus barang ini? Seluruh transaksi terkait juga akan dihapus permanen.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                      </form>
+                    </div>
                   @endif
                 </td>
               @endif
