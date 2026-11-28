@@ -170,9 +170,14 @@ class DashboardController extends Controller
 
         $filterPresets = [
             [
+                'label' => 'Hari ini',
+                'url' => route('dashboard', ['tanggal_mulai' => $today->toDateString(), 'tanggal_selesai' => $today->toDateString()]),
+                'active' => $dateFrom === $today->toDateString() && $dateTo === $today->toDateString(),
+            ],
+            [
                 'label' => 'Bulan ini',
                 'url' => route('dashboard'),
-                'active' => $dateFrom === $monthStart && $dateTo === $today->toDateString(),
+                'active' => $dateFrom === $monthStart && $dateTo === $today->toDateString() && $dateFrom !== $today->toDateString(),
             ],
             [
                 'label' => 'Tahun ini',
