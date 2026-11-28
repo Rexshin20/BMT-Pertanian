@@ -51,35 +51,6 @@
   letter-spacing: -0.01em;
 }
 
-.bmt-dashboard .dash-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.bmt-dashboard .dash-preset {
-  padding: 6px 12px;
-  border: 1px solid var(--dash-border);
-  border-radius: 999px;
-  background: var(--dash-surface);
-  color: #4e6257;
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.bmt-dashboard .dash-preset:hover {
-  border-color: var(--dash-accent);
-  color: var(--dash-accent);
-}
-
-.bmt-dashboard .dash-preset.is-active {
-  border-color: var(--dash-accent);
-  background: var(--dash-accent);
-  color: #fff;
-}
-
 .bmt-dashboard .dash-filter {
   display: flex;
   flex-wrap: wrap;

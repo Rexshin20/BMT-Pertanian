@@ -52,15 +52,9 @@ class DashboardSummaryTest extends TestCase
         $response->assertOk()
             ->assertSee('Ringkasan Omset per Toko')
             ->assertSee('id="omset-toko-search"', false)
-            ->assertSee('Hari ini')
+            ->assertDontSee('dash-preset', false)
             ->assertSee('TOTAL SEMUA TOKO')
             ->assertDontSee('Total (Penjualan - Pembelian)');
-
-        $presets = collect($response->viewData('filterPresets'))->keyBy('label');
-        $this->assertStringContainsString(
-            'tanggal_mulai='.now()->toDateString().'&tanggal_selesai='.now()->toDateString(),
-            $presets['Hari ini']['url']
-        );
 
         $this->assertSame(450.0, $response->viewData('totalSales'));
         $this->assertSame(90.0, $response->viewData('totalPurchases'));

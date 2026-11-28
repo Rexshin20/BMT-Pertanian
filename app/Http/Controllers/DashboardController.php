@@ -161,36 +161,6 @@ class DashboardController extends Controller
         $totalItemStok = $stokAkhirs->count();
         $stokPerTanggal = $tanggalSelesai->copy()->locale('id')->translatedFormat('d M Y');
 
-        $earliestTransaction = collect([
-            Penjualan::query()->min('tanggal'),
-            Pembelian::query()->min('tanggal'),
-        ])->filter()->sort()->first() ?? $today->toDateString();
-        $monthStart = $today->copy()->startOfMonth()->toDateString();
-        $yearStart = $today->copy()->startOfYear()->toDateString();
-
-        $filterPresets = [
-            [
-                'label' => 'Hari ini',
-                'url' => route('dashboard', ['tanggal_mulai' => $today->toDateString(), 'tanggal_selesai' => $today->toDateString()]),
-                'active' => $dateFrom === $today->toDateString() && $dateTo === $today->toDateString(),
-            ],
-            [
-                'label' => 'Bulan ini',
-                'url' => route('dashboard'),
-                'active' => $dateFrom === $monthStart && $dateTo === $today->toDateString() && $dateFrom !== $today->toDateString(),
-            ],
-            [
-                'label' => 'Tahun ini',
-                'url' => route('dashboard', ['tanggal_mulai' => $yearStart, 'tanggal_selesai' => $today->toDateString()]),
-                'active' => $dateFrom === $yearStart && $dateTo === $today->toDateString(),
-            ],
-            [
-                'label' => 'Semua data',
-                'url' => route('dashboard', ['tanggal_mulai' => $earliestTransaction, 'tanggal_selesai' => $today->toDateString()]),
-                'active' => $dateFrom === $earliestTransaction && $dateTo === $today->toDateString(),
-            ],
-        ];
-
         $sales = Penjualan::query()
             ->with('produk')
             ->whereBetween('tanggal', [$dateFrom, $dateTo])
@@ -244,7 +214,6 @@ class DashboardController extends Controller
             'periodeLabel' => $periodeLabel,
             'tanggalMulai' => $dateFrom,
             'tanggalSelesai' => $dateTo,
-            'filterPresets' => $filterPresets,
             'totalSales' => $totalSales,
             'totalPurchases' => $totalPurchases,
             'storeSummaries' => $storeSummaries,

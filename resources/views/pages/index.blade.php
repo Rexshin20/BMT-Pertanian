@@ -16,11 +16,6 @@
           <div class="dash-toolbar-eyebrow">Periode laporan</div>
           <div class="dash-toolbar-period">{{ $periodeLabel }}</div>
         </div>
-        <div class="dash-presets">
-          @foreach ($filterPresets as $preset)
-            <a href="{{ $preset['url'] }}" class="dash-preset {{ $preset['active'] ? 'is-active' : '' }}">{{ $preset['label'] }}</a>
-          @endforeach
-        </div>
       </div>
       <form method="GET" action="{{ route('dashboard') }}" class="dash-filter">
         <div class="dash-filter-field">
