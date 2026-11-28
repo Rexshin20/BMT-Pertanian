@@ -539,6 +539,45 @@ class BookkeepingTest extends TestCase
         $this->assertSame('4.000', $penjualan->fresh()->jumlah);
     }
 
+    public function test_editing_only_sale_date_works_when_stock_is_already_empty(): void
+    {
+        $pemilik = $this->createPemilik('Budi');
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $pemilik->kode,
+            'nama_barang' => 'Gula',
+            'tanggal' => '2026-10-01',
+            'satuan' => 'kg',
+            'jumlah' => '20',
+            'harga_beli' => '100',
+        ])->assertRedirect(route('pembelian.create.list'));
+
+        $produk = Produk::query()->where('pemilik_id', $pemilik->id)->firstOrFail();
+        $this->post(route('penjualan.store'), [
+            'pemilik_kode' => $pemilik->kode,
+            'produk_id' => $produk->id,
+            'tanggal' => '2026-10-02',
+            'satuan' => 'kg',
+            'jumlah' => '20',
+            'harga_jual' => '150',
+        ])->assertRedirect(route('penjualan.create.list'));
+
+        $this->assertSame('0.000', $produk->fresh()->stok);
+        $penjualan = Penjualan::query()->firstOrFail();
+
+        $this->put(route('penjualan.update', $penjualan), [
+            'produk_id' => $produk->id,
+            'satuan' => 'kg',
+            'tanggal' => '2026-10-01',
+            'jumlah' => '20',
+            'harga_jual' => '150',
+        ])->assertRedirect(route('penjualan.create.list'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('0.000', $produk->fresh()->stok);
+        $this->assertSame('2026-10-01', $penjualan->fresh()->tanggal->toDateString());
+        $this->assertSame('20.000', $penjualan->fresh()->jumlah);
+    }
+
     public function test_editing_transactions_to_another_product_moves_stock_between_products(): void
     {
         $ownerA = $this->createPemilik('Pemilik A');

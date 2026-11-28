@@ -106,10 +106,12 @@ class PenjualanController extends Controller
 
         DB::transaction(function () use ($data, $penjualan): void {
             $lockedPenjualan = Penjualan::query()->whereKey($penjualan->id)->lockForUpdate()->firstOrFail();
-            $produkIds = collect([$lockedPenjualan->produk_id, (int) $data['produk_id']])->unique()->sort()->values();
+            $produkIdLama = (int) $lockedPenjualan->produk_id;
+            $produkIdBaru = (int) $data['produk_id'];
+            $produkIds = collect([$produkIdLama, $produkIdBaru])->unique()->sort()->values();
             $produks = Produk::query()->whereIn('id', $produkIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
-            $produkLama = $produks->get($lockedPenjualan->produk_id);
-            $produkBaru = $produks->get((int) $data['produk_id']);
+            $produkLama = $produks->get($produkIdLama);
+            $produkBaru = $produks->get($produkIdBaru);
             $jumlahLama = FinancialAmount::quantityInThousandths((string) $lockedPenjualan->jumlah);
             $jumlahBaru = FinancialAmount::quantityInThousandths((string) $data['jumlah']);
 
@@ -119,7 +121,7 @@ class PenjualanController extends Controller
                 ]);
             }
 
-            if ($lockedPenjualan->produk_id === (int) $data['produk_id']) {
+            if ($produkIdLama === $produkIdBaru) {
                 $stokBaru = FinancialAmount::quantityInThousandths((string) $produkLama->stok) + $jumlahLama - $jumlahBaru;
             } else {
                 $stokLama = FinancialAmount::quantityInThousandths((string) $produkLama->stok) + $jumlahLama;
@@ -133,17 +135,17 @@ class PenjualanController extends Controller
                 $produkBaru->stok = FinancialAmount::quantityFromThousandths($stokTersediaBaru - $jumlahBaru);
             }
 
-            if ($lockedPenjualan->produk_id === (int) $data['produk_id'] && $stokBaru < 0) {
+            if ($produkIdLama === $produkIdBaru && $stokBaru < 0) {
                 throw ValidationException::withMessages([
                     'jumlah' => 'Stok tidak cukup untuk jumlah penjualan yang baru.',
                 ]);
             }
 
-            if ($lockedPenjualan->produk_id === (int) $data['produk_id']) {
+            if ($produkIdLama === $produkIdBaru) {
                 $produkLama->stok = FinancialAmount::quantityFromThousandths($stokBaru);
             }
 
-            $hargaBeli = $lockedPenjualan->produk_id === (int) $data['produk_id']
+            $hargaBeli = $produkIdLama === $produkIdBaru
                 ? (string) $lockedPenjualan->harga_beli_satuan
                 : (string) $produkBaru->harga_beli;
             $lockedPenjualan->update([

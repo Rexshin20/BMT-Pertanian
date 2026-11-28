@@ -109,10 +109,12 @@ class PembelianController extends Controller
 
         DB::transaction(function () use ($data, $pembelian): void {
             $lockedPembelian = Pembelian::query()->whereKey($pembelian->id)->lockForUpdate()->firstOrFail();
-            $produkIds = collect([$lockedPembelian->produk_id, (int) $data['produk_id']])->unique()->sort()->values();
+            $produkIdLama = (int) $lockedPembelian->produk_id;
+            $produkIdBaru = (int) $data['produk_id'];
+            $produkIds = collect([$produkIdLama, $produkIdBaru])->unique()->sort()->values();
             $produks = Produk::query()->whereIn('id', $produkIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
-            $produkLama = $produks->get($lockedPembelian->produk_id);
-            $produkBaru = $produks->get((int) $data['produk_id']);
+            $produkLama = $produks->get($produkIdLama);
+            $produkBaru = $produks->get($produkIdBaru);
             if (! $produkLama || ! $produkBaru) {
                 throw ValidationException::withMessages([
                     'produk_id' => 'Barang yang dipilih tidak ditemukan.',
@@ -121,7 +123,7 @@ class PembelianController extends Controller
             $jumlahLama = FinancialAmount::quantityInThousandths((string) $lockedPembelian->jumlah);
             $jumlahBaru = FinancialAmount::quantityInThousandths((string) $data['jumlah']);
 
-            if ($lockedPembelian->produk_id === (int) $data['produk_id']) {
+            if ($produkIdLama === $produkIdBaru) {
                 $stokBaru = FinancialAmount::quantityInThousandths((string) $produkLama->stok) + $jumlahBaru - $jumlahLama;
                 if ($stokBaru < 0) {
                     throw ValidationException::withMessages([
