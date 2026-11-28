@@ -126,14 +126,22 @@ class DashboardController extends Controller
             ->groupBy('produk_id')
             ->selectRaw('produk_id, COALESCE(SUM(jumlah), 0) AS total_jumlah')
             ->pluck('total_jumlah', 'produk_id');
+        $dibeliSetelah = Pembelian::query()
+            ->whereDate('tanggal', '>', $dateTo)
+            ->groupBy('produk_id')
+            ->selectRaw('produk_id, COALESCE(SUM(jumlah), 0) AS total_jumlah')
+            ->pluck('total_jumlah', 'produk_id');
 
         $stokAkhirs = Produk::query()
             ->with('pemilik')
             ->get()
-            ->map(function (Produk $produk) use ($terjualSetelah): array {
-                // Stok sekarang ditambah penjualan setelah tanggal akhir, supaya
-                // angkanya sesuai posisi stok pada tanggal tersebut.
-                $stok = (float) $produk->stok + (float) ($terjualSetelah[$produk->id] ?? 0);
+            ->map(function (Produk $produk) use ($terjualSetelah, $dibeliSetelah): array {
+                // Stok sekarang disesuaikan dengan transaksi setelah tanggal akhir:
+                // penjualan setelah tanggal ditambahkan, pembelian setelah tanggal
+                // dikurangkan, supaya angkanya sesuai posisi stok pada tanggal itu.
+                $stok = (float) $produk->stok
+                    + (float) ($terjualSetelah[$produk->id] ?? 0)
+                    - (float) ($dibeliSetelah[$produk->id] ?? 0);
                 $hargaBeli = (float) ($produk->harga_beli ?? 0);
 
                 return [

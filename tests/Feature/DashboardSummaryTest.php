@@ -120,30 +120,65 @@ class DashboardSummaryTest extends TestCase
         $this->assertSame(3500.0, $stok['nilai']);
     }
 
-    private function createSale(Produk $produk, string $tanggal, float $cost, float $price): void
+    public function test_stock_as_of_a_past_date_uses_transactions_after_that_date(): void
+    {
+        $bambang = Pemilik::query()->where('kode', '001')->firstOrFail();
+
+        $produk = Produk::query()->create([
+            'pemilik_id' => $bambang->id,
+            'nama' => 'Obat Historis',
+            'satuan' => 'pcs',
+        ]);
+        $produk->stok = '10';
+        $produk->harga_beli = '1000';
+        $produk->save();
+
+        $endDate = now()->subDays(5)->toDateString();
+        $afterEndDate = now()->subDay()->toDateString();
+
+        // Stok sekarang 10 berasal dari kondisi setelah transaksi di bawah.
+        $this->createSale($produk, $afterEndDate, 1000, 1500, 2);
+        $this->createPurchase($produk, $afterEndDate, 1000, 3);
+
+        $response = $this->get(route('dashboard', [
+            'tanggal_mulai' => now()->subDays(10)->toDateString(),
+            'tanggal_selesai' => $endDate,
+        ]));
+
+        $response->assertOk();
+
+        $stok = collect($response->viewData('stokAkhirs'))->firstWhere('nama', 'Obat Historis');
+
+        $this->assertNotNull($stok);
+        // 10 stok sekarang + 2 penjualan setelah tanggal - 3 pembelian setelah tanggal.
+        $this->assertSame(9.0, $stok['stok']);
+        $this->assertSame(9000.0, $stok['nilai']);
+    }
+
+    private function createSale(Produk $produk, string $tanggal, float $cost, float $price, float $quantity = 1): void
     {
         Penjualan::query()->create([
             'produk_id' => $produk->id,
             'tanggal' => $tanggal,
             'satuan' => 'pcs',
-            'jumlah' => '1',
+            'jumlah' => (string) $quantity,
             'harga_beli_satuan' => (string) $cost,
             'harga_jual' => (string) $price,
-            'total_harga_beli' => (string) $cost,
-            'total_harga_jual' => (string) $price,
-            'laba' => (string) ($price - $cost),
+            'total_harga_beli' => (string) ($cost * $quantity),
+            'total_harga_jual' => (string) ($price * $quantity),
+            'laba' => (string) (($price - $cost) * $quantity),
         ]);
     }
 
-    private function createPurchase(Produk $produk, string $tanggal, float $cost): void
+    private function createPurchase(Produk $produk, string $tanggal, float $cost, float $quantity = 1): void
     {
         Pembelian::query()->create([
             'produk_id' => $produk->id,
             'tanggal' => $tanggal,
             'satuan' => 'pcs',
-            'jumlah' => '1',
+            'jumlah' => (string) $quantity,
             'harga_beli' => (string) $cost,
-            'total_harga' => (string) $cost,
+            'total_harga' => (string) ($cost * $quantity),
         ]);
     }
 }
