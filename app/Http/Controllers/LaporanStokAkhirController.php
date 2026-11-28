@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Pembelian;
 use App\Models\Pemilik;
 use App\Models\Penjualan;
 use App\Models\Produk;
@@ -22,8 +23,8 @@ class LaporanStokAkhirController extends Controller
             'alamat' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $tanggalMulai = $filters['tanggal_mulai'] ?? Carbon::today()->startOfMonth()->toDateString();
         $tanggalSelesai = $filters['tanggal_selesai'] ?? Carbon::today()->toDateString();
+        $tanggalMulai = $filters['tanggal_mulai'] ?? $this->tanggalTransaksiPertama($tanggalSelesai);
 
         $terjualPeriode = $this->totalTerjualPeriode($tanggalMulai, $tanggalSelesai);
         $terjualSetelah = $this->totalTerjualSetelah($tanggalSelesai);
@@ -141,6 +142,24 @@ class LaporanStokAkhirController extends Controller
         }
 
         return '';
+    }
+
+    /**
+     * Tanggal transaksi paling awal supaya laporan default menampilkan semua data.
+     */
+    private function tanggalTransaksiPertama(string $tanggalSelesai): string
+    {
+        $pembelian = Pembelian::query()
+            ->whereDate('tanggal', '<=', $tanggalSelesai)
+            ->min('tanggal');
+        $penjualan = Penjualan::query()
+            ->whereDate('tanggal', '<=', $tanggalSelesai)
+            ->min('tanggal');
+
+        return collect([$pembelian, $penjualan])
+            ->filter()
+            ->sort()
+            ->first() ?? $tanggalSelesai;
     }
 
     /**

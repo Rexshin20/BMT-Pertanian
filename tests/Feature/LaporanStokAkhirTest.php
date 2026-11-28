@@ -6,6 +6,7 @@ use App\Models\Pemilik;
 use App\Models\Produk;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class LaporanStokAkhirTest extends TestCase
@@ -68,6 +69,41 @@ class LaporanStokAkhirTest extends TestCase
 
         $this->get(route('laporan.stok-akhir', ['pemilik' => str_pad((string) ($lastCode + 999), 3, '0', STR_PAD_LEFT)]))
             ->assertStatus(302);
+    }
+
+    public function test_laporan_stok_akhir_defaults_to_all_transaction_dates(): void
+    {
+        $lastCode = (int) Pemilik::query()
+            ->selectRaw('MAX(CAST(kode AS DECIMAL(20, 0))) AS kode_terakhir')
+            ->value('kode_terakhir');
+        $kode = str_pad((string) ($lastCode + 1), 3, '0', STR_PAD_LEFT);
+
+        $pemilik = Pemilik::query()->create(['kode' => $kode, 'nama' => 'Budi']);
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $kode,
+            'nama_barang' => 'Kopi',
+            'tanggal' => '2026-07-15',
+            'satuan' => 'pcs',
+            'jumlah' => '10',
+            'harga_beli' => '100',
+        ])->assertRedirect(route('pembelian.create.list'));
+
+        $produk = Produk::query()->where('pemilik_id', $pemilik->id)->firstOrFail();
+        $this->createPenjualan($produk, '2026-08-05', 2);
+        $this->createPenjualan($produk, '2026-10-05', 3);
+        $this->assertSame('5.000', $produk->fresh()->stok);
+
+        $response = $this->get(route('laporan.stok-akhir'));
+        $response->assertOk();
+
+        $this->assertSame('2026-07-15', $response->viewData('tanggalMulai'));
+        $this->assertSame(Carbon::today()->toDateString(), $response->viewData('tanggalSelesai'));
+
+        $laporan = collect($response->viewData('laporans'))->firstWhere('nama_barang', 'Kopi');
+        $this->assertNotNull($laporan);
+        $this->assertSame('10', rtrim(rtrim(number_format((float) $laporan->stok_awal, 3, ',', '.'), '0'), ','));
+        $this->assertSame('5', rtrim(rtrim(number_format((float) $laporan->penjualan, 3, ',', '.'), '0'), ','));
+        $this->assertSame('5', rtrim(rtrim(number_format((float) $laporan->stok_akhir, 3, ',', '.'), '0'), ','));
     }
 
     public function test_berat_bersih_diambil_dari_satuan_bila_nama_barang_tidak_memuat_ukuran(): void
