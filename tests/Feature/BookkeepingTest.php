@@ -394,6 +394,9 @@ class BookkeepingTest extends TestCase
 
         $this->assertSame('5.000', $produk->fresh()->stok);
         $this->assertSame('120.00', $produk->fresh()->harga_beli);
+        // Pembelian dipindah ke setelah tanggal penjualan, jadi harga pokok
+        // penjualan lama tidak ikut berubah.
+        $this->assertSame('100.00', Penjualan::query()->firstOrFail()->harga_beli_satuan);
         $this->assertDatabaseHas('pembelians', [
             'id' => $pembelian->id,
             'tanggal' => '2026-10-03',
@@ -415,6 +418,56 @@ class BookkeepingTest extends TestCase
 
         $this->assertSame('5.000', $produk->fresh()->stok);
         $this->assertSame('8.000', $pembelian->fresh()->jumlah);
+    }
+
+    public function test_editing_purchase_price_updates_existing_sale_cost_and_profit(): void
+    {
+        $pemilik = $this->createPemilik('Ani');
+        $this->post(route('pembelian.store'), [
+            'pemilik_kode' => $pemilik->kode,
+            'nama_barang' => 'Beras',
+            'tanggal' => '2026-10-01',
+            'satuan' => 'kg',
+            'jumlah' => '10',
+            'harga_beli' => '100',
+        ])->assertRedirect(route('pembelian.create.list'));
+
+        $produk = Produk::query()->where('pemilik_id', $pemilik->id)->firstOrFail();
+        $this->post(route('penjualan.store'), [
+            'pemilik_kode' => $pemilik->kode,
+            'produk_id' => $produk->id,
+            'tanggal' => '2026-10-02',
+            'satuan' => 'kg',
+            'jumlah' => '3',
+            'harga_jual' => '150',
+        ])->assertRedirect(route('penjualan.create.list'));
+
+        $penjualan = Penjualan::query()->firstOrFail();
+        $this->assertSame('100.00', $penjualan->harga_beli_satuan);
+
+        $pembelian = Pembelian::query()->firstOrFail();
+        $this->put(route('pembelian.update', $pembelian), [
+            'produk_id' => $produk->id,
+            'satuan' => 'kg',
+            'tanggal' => '2026-10-01',
+            'jumlah' => '10',
+            'harga_beli' => '120',
+        ])->assertRedirect(route('pembelian.create.list'));
+
+        $penjualan->refresh();
+        $this->assertSame('120.00', $penjualan->harga_beli_satuan);
+        $this->assertSame('360.00', $penjualan->total_harga_beli);
+        $this->assertSame('90.00', $penjualan->laba);
+
+        $this->get(route('laporan.laba-rugi', [
+            'tanggal_mulai' => '2026-10-01',
+            'tanggal_selesai' => '2026-10-31',
+            'pemilik' => $pemilik->kode,
+        ]))
+            ->assertOk()
+            ->assertSee('Rp 120,00')
+            ->assertSee('Rp 360,00')
+            ->assertSee('Rp 90,00');
     }
 
     public function test_sale_transactions_can_be_edited_and_recalculate_stock_and_profit(): void

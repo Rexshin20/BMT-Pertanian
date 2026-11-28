@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pembelian;
 use App\Models\Pemilik;
+use App\Models\Penjualan;
 use App\Models\Produk;
 use App\Support\FinancialAmount;
 use App\Support\PembelianImport;
@@ -153,9 +154,12 @@ class PembelianController extends Controller
             foreach ($produks as $produk) {
                 $produk->harga_beli = (string) (Pembelian::query()
                     ->where('produk_id', $produk->id)
+                    ->orderByDesc('tanggal')
                     ->orderByDesc('id')
                     ->value('harga_beli') ?? '0');
                 $produk->save();
+
+                $this->syncSaleCosts($produk);
             }
         });
 
@@ -186,9 +190,12 @@ class PembelianController extends Controller
             if ($produk) {
                 $produk->harga_beli = (string) (Pembelian::query()
                     ->where('produk_id', $produk->id)
+                    ->orderByDesc('tanggal')
                     ->orderByDesc('id')
                     ->value('harga_beli') ?? '0');
                 $produk->save();
+
+                $this->syncSaleCosts($produk);
             }
         });
 
@@ -326,6 +333,49 @@ class PembelianController extends Controller
         }
 
         return redirect()->route('pembelian.index')->with('success', $message);
+    }
+
+    private function syncSaleCosts(Produk $produk): void
+    {
+        $purchases = Pembelian::query()
+            ->where('produk_id', $produk->id)
+            ->orderBy('tanggal')
+            ->orderBy('id')
+            ->get(['id', 'tanggal', 'harga_beli']);
+
+        if ($purchases->isEmpty()) {
+            return;
+        }
+
+        Penjualan::query()
+            ->where('produk_id', $produk->id)
+            ->orderBy('tanggal')
+            ->orderBy('id')
+            ->get()
+            ->each(function (Penjualan $penjualan) use ($purchases): void {
+                $purchase = $purchases
+                    ->filter(fn (Pembelian $item) => $item->tanggal->lte($penjualan->tanggal))
+                    ->last();
+
+                if (! $purchase) {
+                    return;
+                }
+
+                $hargaBeli = (string) $purchase->harga_beli;
+
+                if ((string) $penjualan->harga_beli_satuan === $hargaBeli) {
+                    return;
+                }
+
+                $penjualan->harga_beli_satuan = $hargaBeli;
+                $penjualan->total_harga_beli = FinancialAmount::multiply((string) $penjualan->jumlah, $hargaBeli);
+                $penjualan->laba = FinancialAmount::profit(
+                    (string) $penjualan->jumlah,
+                    (string) $penjualan->harga_jual,
+                    $hargaBeli
+                );
+                $penjualan->save();
+            });
     }
 
     private function recordPurchase(array $data): void
